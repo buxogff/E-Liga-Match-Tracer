@@ -3,21 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Liga Match Tracker</title>
+    <title>E-Liga Match Tracer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .bg-magenta { background-color: #e6007e; }
+        .text-magenta { color: #e6007e; }
+        .border-magenta { border-color: #e6007e; }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
-    <div id="app" class="max-w-md mx-auto">
-        <h1 class="text-2xl font-bold text-center mb-6">ეროვნული ლიგა</h1>
-        <div class="bg-white p-6 rounded-2xl shadow-lg text-center">
-            <h2 class="text-xl font-semibold mb-4">მიმდინარე მატჩი</h2>
-            <div class="flex justify-between text-4xl font-bold mb-8">
-                <span>0</span>
-                <span>-</span>
-                <span>0</span>
+<body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
+
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <div x-show="view === 'home'" class="flex flex-col items-center justify-center h-screen p-8 text-center space-y-8">
+            <div class="space-y-2">
+                <h1 class="text-4xl font-black text-gray-800 uppercase tracking-tighter">ეროვნული ლიგა</h1>
+                <p class="text-gray-400 font-medium tracking-widest text-sm uppercase">National League</p>
             </div>
-            <button class="w-full bg-pink-500 text-white py-4 rounded-xl font-bold text-lg">+ New Match</button>
+            
+            <div class="absolute inset-0 opacity-5 pointer-events-none">
+                <svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#grid)" /></svg>
+            </div>
+
+            <div class="w-full space-y-4">
+                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg transform active:scale-95 transition">
+                    + New Match
+                </button>
+                <button @click="view = 'history'" class="w-full border-2 border-gray-800 text-gray-800 py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>History</span>
+                </button>
+            </div>
         </div>
+
+        <div x-show="view === 'setup'" x-cloak class="p-6 space-y-6 overflow-y-auto h-screen">
+            <div class="flex items-center space-x-4">
+                <button @click="view = 'home'" class="p-2 text-gray-500"><i class="fa-solid fa-chevron-left"></i></button>
+                <h2 class="text-2xl font-bold">Match Setup</h2>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-400 uppercase mb-2">Team Names</label>
+                    <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full p-4 bg-gray-50 border-none rounded-xl mb-2 focus:ring-2 ring-magenta">
+                    <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 ring-magenta">
+                </div>
+
+                <div class="flex p-1 bg-gray-100 rounded-xl">
+                    <button @click="setup.activeTab = 'home'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition">Home Team</button>
+                    <button @click="setup.activeTab = 'away'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition">Away Team</button>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-2xl space-y-4">
+                    <div class="grid grid-cols-4 gap-2">
+                        <template x-for="pos in ['GK', 'DF', 'MF', 'FW']">
+                            <button @click="setup.playerPos = pos" :class="setup.playerPos === pos ? 'bg-magenta text-white' : 'bg-white text-gray-500 border'" class="py-2 rounded-lg font-bold text-xs" x-text="pos"></button>
+                        </template>
+                    </div>
+                    <div class="flex space-x-2">
+                        <input type="number" x-model="setup.playerNum" placeholder="No." class="w-20 p-3 rounded-xl border-none">
+                        <input type="text" x-model="setup.playerName" placeholder="Player Name" class="flex-1 p-3 rounded-xl border-none">
+                    </div>
+                    <button @click="addPlayerToSetup()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold">+ Add Player</button>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="font-bold uppercase text-xs text-gray-400" x-text="(setup.activeTab === 'home' ? setup.homeName : setup.awayName) + ' Players'"></h3>
+                    <div class="max-h-48 overflow-y-auto space-y-2">
+                        <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers)">
+                            <div class="flex items-center justify-between p-3 bg-white border rounded-xl">
+                                <div>
+                                    <span class="font-bold mr-2" x-text="'#' + p.num"></span>
+                                    <span x-text="p.name || 'No name'"></span>
+                                    <span class="text-[10px] bg-gray-200 px-2 py-1 rounded ml-2" x-text="p.pos"></span>
+                                </div>
+                                <button @click="removePlayerFromSetup(index)" class="text-red-500 text-xs font-bold">Remove</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg mt-8">
+                    Start Match
+                </button>
+            </div>
+        </div>
+
+        <div x-show="view === 'live'" x-cloak class="flex flex-col h-screen overflow-hidden">
+            <div class="p-6 bg-gray-800 text-white text-center space-y-4">
+                <h2 class="text-sm font-bold uppercase tracking-widest opacity-50">Live Match</h2>
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 text-right pr-4">
+                        <p class="text-lg font-bold" x-text="match.homeName"></p>
+                        <p class="text-4xl font-black" x-text="match.scoreHome"></p>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-2xl font-mono bg-black bg-opacity-30 px-3 py-1 rounded-lg" x-text="formatTime(match.timer)"></p>
+                        <button @click="toggleTimer()" class="text-magenta text-2xl">
+                            <i :class="match.isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause'"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 text-left pl-4">
+                        <p class="text-lg font-bold" x-text="match.awayName"></p>
+                        <p class="text-4xl font-black" x-text="match.scoreAway"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button @click="openEventModal('goal')" class="bg-green-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-futbol text-2xl"></i>
+                        <span class="font-bold">Goal</span>
+                    </button>
+                    <button @click="openEventModal('penalty')" class="bg-green-600 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-bullseye text-2xl"></i>
+                        <span class="font-bold">Penalty</span>
+                    </button>
+                    <button @click="openEventModal('yellow')" class="bg-yellow-400 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-square text-2xl"></i>
+                        <span class="font-bold">Yellow Card</span>
+                    </button>
+                    <button @click="openEventModal('red')" class="bg-red-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-square text-2xl"></i>
+                        <span class="font-bold">Red Card</span>
+                    </button>
+                    <button @click="openEventModal('corner')" class="bg-blue-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-flag text-2xl"></i>
+                        <span class="font-bold">Corner</span>
+                    </button>
+                    <button @click="openEventModal('sub')" class="bg-cyan-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
+                        <i class="fa-solid fa-arrows-rotate text-2xl"></i>
+                        <span class="font-bold">Sub</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="font-bold text-gray-400 text-xs uppercase">Match Events</h3>
+                    <template x-for="ev in match.events">
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border-l-4" :class="ev.team === 'home' ? 'border-magenta' : 'border-gray-800'">
+                            <span class="font-mono text-xs font-bold" x-text="ev.time"></span>
+                            <div class="flex-1">
+                                <span class="font-bold" x-text="ev.type.toUpperCase()"></span>
+                                <span class="text-gray-500 text-sm" x-text="' - #' + ev.playerNum + ' ' + (ev.playerName || '')"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="p-4 border-t">
+                <button @click="finishMatch()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold uppercase tracking-widest transform active:scale-95">Finish Match</button>
+            </div>
+        </div>
+
+        <div x-show="view === 'history'" x-cloak class="p-6 h-screen flex flex-col">
+            <div class="flex items-center justify-between mb-8">
+                <button @click="view = 'home'" class="p-2 text-gray-500"><i class="fa-solid fa-chevron-left"></i></button>
+                <h2 class="text-2xl font-bold">Match History</h2>
+                <button @click="clearHistory()" class="text-red-500 text-xs uppercase font-bold">Clear All</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-4">
+                <template x-for="h in history">
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border space-y-3">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <span class="text-xs font-bold text-gray-400" x-text="h.date"></span>
+                            <span class="text-xs font-bold text-magenta" x-text="h.time"></span>
+                        </div>
+                        <div class="flex justify-between items-center px-4">
+                            <div class="text-center flex-1">
+                                <p class="font-bold" x-text="h.homeName"></p>
+                                <p class="text-2xl font-black" x-text="h.scoreHome"></p>
+                            </div>
+                            <div class="text-gray-200 font-bold px-4 text-xl">VS</div>
+                            <div class="text-center flex-1">
+                                <p class="font-bold" x-text="h.awayName"></p>
+                                <p class="text-2xl font-black" x-text="h.scoreAway"></p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="history.length === 0" class="text-center py-20 text-gray-400 font-bold">No history available</div>
+            </div>
+        </div>
+
+        <div x-show="modal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-8 space-y-6 transform transition-transform" @click.away="modal.open = false">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold capitalize" x-text="modal.type + ' - Select Player'"></h3>
+                    <button @click="modal.open = false" class="text-gray-400 text-2xl">&times;</button>
+                </div>
+                
+                <div class="flex p-1 bg-gray-100 rounded-xl">
+                    <button @click="modal.team = 'home'" :class="modal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.homeName"></button>
+                    <button @click="modal.team = 'away'" :class="modal.team === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.awayName"></button>
+                </div>
+
+                <div class="max-h-64 overflow-y-auto space-y-2">
+                    <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers)">
+                        <button @click="recordEvent(p)" class="w-full p-4 border rounded-2xl flex items-center justify-between hover:bg-gray-50 active:bg-gray-100">
+                            <span class="font-bold" x-text="'#' + p.num"></span>
+                            <span class="flex-1 text-left px-4" x-text="p.name || 'No name'"></span>
+                            <i class="fa-solid fa-plus text-magenta"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        function matchApp() {
+            return {
+                view: 'home', // 'home', 'setup', 'live', 'history'
+                history: [],
+                setup: {
+                    activeTab: 'home',
+                    homeName: 'Gagra',
+                    awayName: 'Dila',
+                    homePlayers: [],
+                    awayPlayers: [],
+                    playerPos: 'GK',
+                    playerNum: '',
+                    playerName: ''
+                },
+                match: {
+                    homeName: '',
+                    awayName: '',
+                    scoreHome: 0,
+                    scoreAway: 0,
+                    homePlayers: [],
+                    awayPlayers: [],
+                    events: [],
+                    timer: 0,
+                    isPaused: true,
+                    timerInterval: null
+                },
+                modal: {
+                    open: false,
+                    type: '',
+                    team: 'home'
+                },
+
+                init() {
+                    this.history = JSON.parse(localStorage.getItem('matchHistory') || '[]');
+                },
+
+                addPlayerToSetup() {
+                    if (!this.setup.playerNum) return alert('Enter player number');
+                    const player = {
+                        num: this.setup.playerNum,
+                        name: this.setup.playerName,
+                        pos: this.setup.playerPos
+                    };
+                    if (this.setup.activeTab === 'home') this.setup.homePlayers.push(player);
+                    else this.setup.awayPlayers.push(player);
+                    this.setup.playerNum = '';
+                    this.setup.playerName = '';
+                },
+
+                removePlayerFromSetup(index) {
+                    if (this.setup.activeTab === 'home') this.setup.homePlayers.splice(index, 1);
+                    else this.setup.awayPlayers.splice(index, 1);
+                },
+
+                startMatch() {
+                    this.match.homeName = this.setup.homeName;
+                    this.match.awayName = this.setup.awayName;
+                    this.match.homePlayers = [...this.setup.homePlayers];
+                    this.match.awayPlayers = [...this.setup.awayPlayers];
+                    this.match.scoreHome = 0;
+                    this.match.scoreAway = 0;
+                    this.match.events = [];
+                    this.match.timer = 0;
+                    this.view = 'live';
+                },
+
+                toggleTimer() {
+                    this.match.isPaused = !this.match.isPaused;
+                    if (!this.match.isPaused) {
+                        this.match.timerInterval = setInterval(() => {
+                            this.match.timer++;
+                        }, 1000);
+                    } else {
+                        clearInterval(this.match.timerInterval);
+                    }
+                },
+
+                formatTime(seconds) {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                },
+
+                openEventModal(type) {
+                    this.modal.type = type;
+                    this.modal.open = true;
+                },
+
+                recordEvent(player) {
+                    const event = {
+                        type: this.modal.type,
+                        team: this.modal.team,
+                        playerNum: player.num,
+                        playerName: player.name,
+                        time: this.formatTime(this.match.timer)
+                    };
+                    this.match.events.unshift(event);
+                    if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
+                        if (this.modal.team === 'home') this.match.scoreHome++;
+                        else this.match.scoreAway++;
+                    }
+                    this.modal.open = false;
+                },
+
+                finishMatch() {
+                    if (!confirm('Are you sure you want to finish the match?')) return;
+                    clearInterval(this.match.timerInterval);
+                    const matchData = {
+                        date: new Date().toLocaleDateString(),
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        homeName: this.match.homeName,
+                        awayName: this.match.awayName,
+                        scoreHome: this.match.scoreHome,
+                        scoreAway: this.match.scoreAway,
+                        events: this.match.events
+                    };
+                    this.history.unshift(matchData);
+                    localStorage.setItem('matchHistory', JSON.stringify(this.history));
+                    this.view = 'history';
+                },
+
+                clearHistory() {
+                    if (confirm('Clear all history?')) {
+                        this.history = [];
+                        localStorage.removeItem('matchHistory');
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>
+
+### რამდენიმე მნიშვნელოვანი რამ:
+*   **ტაიმერი:** ღილაკი `Pause/Play` აკონტროლებს დროს.
+*   **შენახვა:** ყველა დასრულებული მატჩი ავტომატურად შეინახება შენი ტელეფონის/კომპიუტერის მეხსიერებაში.
+*   **დიზაინი:** გამოვიყენე Magenta (ვარდისფერი) ფერი, რომელიც ზუსტად Crystalbet ეროვნული ლიგის სტილშია.
+
+როცა კოდს ჩასვამ და შეინახავ, შენი ძველი ლინკი (რომელიც წინა შეტყობინებაში გამომიგზავნე) ავტომატურად განახლდება. შედი და შეამოწმე!
+
+მითხარი, ყველაფერი ისეა, როგორც გინდოდა?
