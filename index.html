@@ -6,11 +6,14 @@
     <title>E-Liga Match Tracer Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
         .bg-magenta { background-color: #e6007e; }
         .text-magenta { color: #e6007e; }
         .border-magenta { border-color: #e6007e; }
+        /* PDF-ისთვის უკეთესი რენდერი */
+        .pdf-container { background: white; padding: 20px; color: black; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
@@ -40,7 +43,7 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Team Names</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-200">
+                        <input type="text" x-model="setup.homeName" placeholder="FC Grand Tbilisi" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-200">
                         <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-200">
                     </div>
                 </div>
@@ -115,21 +118,8 @@
                 <div class="grid grid-cols-2 gap-3">
                     <template x-for="type in ['goal', 'penalty', 'yellow', 'red', 'corner', 'sub']">
                         <button @click="openEventModal(type)" class="py-4 px-2 rounded-2xl flex flex-col items-center space-y-2 text-white shadow-md transform active:scale-95 transition"
-                                :class="{
-                                    'bg-green-500': type === 'goal',
-                                    'bg-green-600': type === 'penalty',
-                                    'bg-yellow-400': type === 'yellow',
-                                    'bg-red-500': type === 'red',
-                                    'bg-blue-500': type === 'corner',
-                                    'bg-cyan-500': type === 'sub'
-                                }">
-                            <i class="fa-solid text-2xl drop-shadow-sm" :class="{
-                                'fa-futbol': type === 'goal',
-                                'fa-bullseye': type === 'penalty',
-                                'fa-square': type === 'yellow' || type === 'red',
-                                'fa-flag': type === 'corner',
-                                'fa-arrows-rotate': type === 'sub'
-                            }"></i>
+                                :class="{'bg-green-500': type === 'goal', 'bg-green-600': type === 'penalty', 'bg-yellow-400': type === 'yellow', 'bg-red-500': type === 'red', 'bg-blue-500': type === 'corner', 'bg-cyan-500': type === 'sub'}">
+                            <i class="fa-solid text-2xl drop-shadow-sm" :class="{'fa-futbol': type === 'goal', 'fa-bullseye': type === 'penalty', 'fa-square': type === 'yellow' || type === 'red', 'fa-flag': type === 'corner', 'fa-arrows-rotate': type === 'sub'}"></i>
                             <span class="text-[11px] font-black uppercase tracking-wider" x-text="type"></span>
                         </button>
                     </template>
@@ -140,32 +130,17 @@
                         <h3 class="font-black text-gray-400 text-xs uppercase tracking-widest">Events</h3>
                         <span class="text-xs font-bold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full" x-text="match.events.length"></span>
                     </div>
-                    
                     <template x-for="(ev, index) in match.events">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-gray-800'">
-                            
                             <div class="flex flex-col items-center justify-center bg-gray-100 rounded-lg px-3 py-2 mr-3 cursor-pointer hover:bg-gray-200 transition" @click="openTimeEditOnly(index)">
                                 <span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span>
                             </div>
-                            
                             <div class="w-8 flex justify-center mr-2">
-                                <i class="fa-solid text-xl" :class="{
-                                    'fa-futbol text-green-500': ev.type === 'goal',
-                                    'fa-bullseye text-green-600': ev.type === 'penalty',
-                                    'fa-square text-yellow-400': ev.type === 'yellow',
-                                    'fa-square text-red-500': ev.type === 'red',
-                                    'fa-flag text-blue-500': ev.type === 'corner',
-                                    'fa-arrows-rotate text-cyan-500': ev.type === 'sub'
-                                }"></i>
+                                <i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-bullseye text-green-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-blue-500': ev.type === 'corner', 'fa-arrows-rotate text-cyan-500': ev.type === 'sub'}"></i>
                             </div>
-
                             <div class="flex-1 text-sm">
-                                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5" 
-                                     x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type"></div>
-                                
-                                <template x-if="ev.type !== 'sub'">
-                                    <div class="font-black text-gray-800" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></div>
-                                </template>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type"></div>
+                                <template x-if="ev.type !== 'sub'"><div class="font-black text-gray-800" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></div></template>
                                 <template x-if="ev.type === 'sub'">
                                     <div class="font-bold text-gray-800 flex items-center space-x-2 text-xs">
                                         <span class="text-red-500"><i class="fa-solid fa-arrow-down mr-1"></i><span x-text="'#'+ev.playerOut.num"></span></span>
@@ -173,7 +148,6 @@
                                     </div>
                                 </template>
                             </div>
-                            
                             <div class="flex flex-col space-y-1 ml-2">
                                 <button @click="openEventEdit(index)" class="text-blue-500 w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition"><i class="fa-solid fa-pen text-xs"></i></button>
                                 <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) match.events.splice(index, 1)" class="text-red-500 w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -192,12 +166,15 @@
             <div class="flex items-center justify-between mb-8">
                 <button @click="view = 'home'" class="p-2 text-gray-500"><i class="fa-solid fa-chevron-left"></i></button>
                 <h2 class="text-2xl font-bold">Match History</h2>
-                <button @click="clearHistory()" class="text-red-500 text-xs font-bold bg-red-50 px-3 py-1.5 rounded-lg">CLEAR</button>
+                <button @click="clearHistory()" class="text-red-500 text-xs font-bold bg-red-50 px-3 py-1.5 rounded-lg">CLEAR ALL</button>
             </div>
+            
             <div class="flex-1 overflow-y-auto space-y-4">
-                <template x-for="h in history">
-                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-3">
-                        <div class="flex justify-between border-b pb-2">
+                <template x-for="(h, index) in history">
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-3 relative group">
+                        <button @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center opacity-80 hover:opacity-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        
+                        <div class="flex justify-between border-b pb-2 pr-10">
                             <span class="text-[10px] font-bold text-gray-400" x-text="h.date"></span>
                         </div>
                         <div class="flex justify-between items-center">
@@ -205,9 +182,97 @@
                             <div class="text-[10px] font-bold text-gray-300 bg-gray-50 px-2 py-1 rounded-full">VS</div>
                             <div class="text-center flex-1"><p class="text-[11px] font-bold uppercase mb-1" x-text="h.awayName"></p><p class="text-2xl font-black" x-text="h.scoreAway"></p></div>
                         </div>
+                        <button @click="viewReport(index)" class="w-full bg-blue-50 text-blue-600 py-3 rounded-xl font-bold text-xs uppercase tracking-widest mt-2 hover:bg-blue-100 transition">View Report</button>
                     </div>
                 </template>
                 <div x-show="history.length === 0" class="text-center text-gray-400 font-bold mt-20">ისტორია ცარიელია</div>
+            </div>
+        </div>
+
+        <div x-show="view === 'report'" x-cloak class="h-screen flex flex-col bg-gray-100 overflow-hidden">
+            <div class="p-4 bg-white border-b flex items-center justify-between shadow-sm z-10">
+                <button @click="view = 'history'" class="p-2 text-gray-500"><i class="fa-solid fa-chevron-left"></i></button>
+                <h2 class="text-lg font-bold">Match Report</h2>
+                <button @click="downloadPDF()" class="text-magenta bg-pink-50 p-2 rounded-lg font-bold text-xs flex items-center"><i class="fa-solid fa-download mr-2"></i> PDF</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="pdf-content" class="bg-white rounded-2xl shadow-md p-6 pdf-container">
+                    <div class="text-center border-b pb-4 mb-4">
+                        <h1 class="font-black text-2xl uppercase text-gray-800">Match Report</h1>
+                        <p class="text-xs font-bold text-gray-400 mt-1" x-text="currentReport?.date"></p>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl mb-6">
+                        <div class="text-center flex-1"><p class="text-xs font-bold uppercase text-gray-500 mb-1" x-text="currentReport?.homeName"></p><p class="text-4xl font-black text-magenta" x-text="currentReport?.scoreHome"></p></div>
+                        <div class="text-sm font-black text-gray-300">VS</div>
+                        <div class="text-center flex-1"><p class="text-xs font-bold uppercase text-gray-500 mb-1" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-gray-800" x-text="currentReport?.scoreAway"></p></div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-black text-sm uppercase text-gray-800 mb-3 border-b pb-1">Statistics</h3>
+                        <table class="w-full text-sm">
+                            <tr class="text-gray-500 font-bold text-[10px] uppercase border-b">
+                                <td class="py-2 w-1/3" x-text="currentReport?.homeName"></td><td class="text-center w-1/3">Stat</td><td class="text-right w-1/3" x-text="currentReport?.awayName"></td>
+                            </tr>
+                            <tr class="border-b"><td class="py-2 font-bold" x-text="currentReport?.stats.home.yellow"></td><td class="text-center text-xs text-gray-500">Yellow Cards</td><td class="text-right font-bold" x-text="currentReport?.stats.away.yellow"></td></tr>
+                            <tr class="border-b"><td class="py-2 font-bold" x-text="currentReport?.stats.home.red"></td><td class="text-center text-xs text-gray-500">Red Cards</td><td class="text-right font-bold" x-text="currentReport?.stats.away.red"></td></tr>
+                            <tr class="border-b"><td class="py-2 font-bold" x-text="currentReport?.stats.home.corner"></td><td class="text-center text-xs text-gray-500">Corners</td><td class="text-right font-bold" x-text="currentReport?.stats.away.corner"></td></tr>
+                        </table>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-black text-sm uppercase text-gray-800 mb-3 border-b pb-1">Match Events</h3>
+                        <div class="space-y-2">
+                            <template x-for="ev in currentReport?.events">
+                                <div class="flex items-center text-xs border-b border-dashed py-1">
+                                    <span class="font-mono font-bold text-gray-500 w-12" x-text="ev.time"></span>
+                                    <span class="font-bold text-gray-700 w-24 truncate" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
+                                    <span class="uppercase font-bold text-magenta w-20" x-text="ev.type"></span>
+                                    <template x-if="ev.type !== 'sub'">
+                                        <span class="font-bold text-gray-800" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></span>
+                                    </template>
+                                    <template x-if="ev.type === 'sub'">
+                                        <span class="text-gray-600">Out: #<span x-text="ev.playerOut.num"></span> / In: #<span x-text="ev.playerIn.num"></span></span>
+                                    </template>
+                                </div>
+                            </template>
+                            <div x-show="!currentReport?.events.length" class="text-xs text-gray-400">No events recorded.</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-black text-sm uppercase text-gray-800 mb-3 border-b pb-1">Lineups</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-bold text-xs text-magenta mb-2 uppercase truncate" x-text="currentReport?.homeName"></h4>
+                                <div class="text-xs space-y-1">
+                                    <p class="font-bold text-[9px] text-gray-400 uppercase mt-2 border-b">Starting XI</p>
+                                    <template x-for="p in currentReport?.homePlayers.filter(x => x.status === 'starting')">
+                                        <div class="flex"><span class="font-bold w-6 text-gray-500" x-text="'#'+p.num"></span><span x-text="p.name"></span></div>
+                                    </template>
+                                    <p class="font-bold text-[9px] text-gray-400 uppercase mt-3 border-b">Bench</p>
+                                    <template x-for="p in currentReport?.homePlayers.filter(x => x.status === 'sub')">
+                                        <div class="flex text-gray-500"><span class="font-bold w-6" x-text="'#'+p.num"></span><span x-text="p.name"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-gray-800 mb-2 uppercase truncate" x-text="currentReport?.awayName"></h4>
+                                <div class="text-xs space-y-1">
+                                    <p class="font-bold text-[9px] text-gray-400 uppercase mt-2 border-b">Starting XI</p>
+                                    <template x-for="p in currentReport?.awayPlayers.filter(x => x.status === 'starting')">
+                                        <div class="flex"><span class="font-bold w-6 text-gray-500" x-text="'#'+p.num"></span><span x-text="p.name"></span></div>
+                                    </template>
+                                    <p class="font-bold text-[9px] text-gray-400 uppercase mt-3 border-b">Bench</p>
+                                    <template x-for="p in currentReport?.awayPlayers.filter(x => x.status === 'sub')">
+                                        <div class="flex text-gray-500"><span class="font-bold w-6" x-text="'#'+p.num"></span><span x-text="p.name"></span></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -294,7 +359,6 @@
         <div x-show="editModal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white p-6 rounded-3xl w-11/12 max-w-sm space-y-5" @click.away="editModal.open = false">
                 <h3 class="font-black text-lg text-center uppercase tracking-wider border-b pb-3 text-gray-800" x-text="'Edit ' + editModal.type"></h3>
-                
                 <div class="flex space-x-4">
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
@@ -309,7 +373,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">გუნდი</label>
                     <div class="flex p-1 bg-gray-100 rounded-xl">
@@ -317,7 +380,6 @@
                         <button @click="editModal.team = 'away'" :class="editModal.team === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition" x-text="match.awayName"></button>
                     </div>
                 </div>
-
                 <template x-if="editModal.type !== 'sub'">
                     <div>
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">მოთამაშე</label>
@@ -328,13 +390,6 @@
                         </select>
                     </div>
                 </template>
-                <template x-if="editModal.type === 'sub'">
-                    <div class="bg-orange-50 border border-orange-100 p-3 rounded-xl flex items-start space-x-2">
-                        <i class="fa-solid fa-circle-info text-orange-400 mt-0.5"></i>
-                        <p class="text-[11px] text-orange-600 font-medium">ცვლილების (Sub) მოთამაშეების შესაცვლელად, გთხოვთ წაშალოთ ეს მოვლენა და თავიდან დაამატოთ ზუსტი მონაცემებით.</p>
-                    </div>
-                </template>
-
                 <div class="flex space-x-2 pt-2">
                     <button @click="editModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition">გაუქმება</button>
                     <button @click="saveEventEdit()" class="flex-1 bg-magenta text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-pink-600 transition">დადასტურება</button>
@@ -351,6 +406,7 @@
             return {
                 view: 'home',
                 history: [],
+                currentReport: null,
                 setup: {
                     activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [],
                     playerStatus: 'starting', playerNum: '', playerName: ''
@@ -360,7 +416,6 @@
                     homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, timerInterval: null
                 },
                 modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
-                
                 timeModal: { open: false, min: 0, sec: 0, editEventIndex: -1 },
                 scoreModal: { open: false, team: '', val: 0 },
                 editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
@@ -369,27 +424,19 @@
                     this.history = JSON.parse(localStorage.getItem('matchHistory') || '[]');
                 },
 
-                // Setup Functions
+                // Setup
                 addPlayerToSetup() {
                     if (!this.setup.playerNum) return;
                     const p = { id: Date.now(), num: this.setup.playerNum, name: this.setup.playerName, status: this.setup.playerStatus };
+                    if (this.setup.activeTab === 'home') this.setup.homePlayers.push(p);
+                    else this.setup.awayPlayers.push(p);
                     
-                    if (this.setup.activeTab === 'home') {
-                        this.setup.homePlayers.push(p);
-                    } else {
-                        this.setup.awayPlayers.push(p);
-                    }
-                    
-                    // ჭკვიანი გადართვა: თუ starting შეივსო (11), გადადის sub-ზე
                     let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
                     let startersCount = currentList.filter(x => x.status === 'starting').length;
-                    
                     if (this.setup.playerStatus === 'starting' && startersCount >= 11) {
                         this.setup.playerStatus = 'sub';
                     }
-
-                    this.setup.playerNum = ''; 
-                    this.setup.playerName = '';
+                    this.setup.playerNum = ''; this.setup.playerName = '';
                 },
                 removePlayerFromSetup(id) {
                     if (this.setup.activeTab === 'home') this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
@@ -411,19 +458,15 @@
                         this.match.timerInterval = setInterval(() => {
                             this.match.timer++;
                             if (this.match.timer === 2700) {
-                                this.match.isPaused = true;
-                                clearInterval(this.match.timerInterval);
-                                alert('პირველი ტაიმი დასრულდა! (45 წუთი)');
+                                this.match.isPaused = true; clearInterval(this.match.timerInterval); alert('პირველი ტაიმი დასრულდა! (45 წუთი)');
                             }
                         }, 1000);
                     } else { clearInterval(this.match.timerInterval); }
                 },
                 formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
-                // Event Recording
-                openEventModal(type) {
-                    this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null;
-                },
+                // Events
+                openEventModal(type) { this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null; },
                 recordStandardEvent(p) {
                     this.match.events.unshift({ type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
                     if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
@@ -440,63 +483,29 @@
                     this.modal.open = false;
                 },
 
-                // --- EDIT FUNCTIONS ---
-
-                // Main Timer Edit
-                openTimeEdit() {
-                    this.timeModal.editEventIndex = -1; // -1 ნიშნავს მთავარ ტაიმერს
-                    this.timeModal.min = Math.floor(this.match.timer / 60);
-                    this.timeModal.sec = this.match.timer % 60;
-                    this.timeModal.open = true;
-                },
-                // Event Time Edit Only (პატარა ღილაკი ივენთზე)
+                // Edit
+                openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor(this.match.timer / 60); this.timeModal.sec = this.match.timer % 60; this.timeModal.open = true; },
                 openTimeEditOnly(index) {
-                    let ev = this.match.events[index];
-                    let tParts = ev.time.split(':');
-                    this.timeModal.editEventIndex = index;
-                    this.timeModal.min = parseInt(tParts[0]);
-                    this.timeModal.sec = parseInt(tParts[1]);
-                    this.timeModal.open = true;
+                    let ev = this.match.events[index]; let tParts = ev.time.split(':');
+                    this.timeModal.editEventIndex = index; this.timeModal.min = parseInt(tParts[0]); this.timeModal.sec = parseInt(tParts[1]); this.timeModal.open = true;
                 },
                 saveTimeEdit() {
                     let newTime = parseInt(this.timeModal.min) * 60 + parseInt(this.timeModal.sec);
-                    if (this.timeModal.editEventIndex === -1) {
-                        this.match.timer = newTime;
-                    } else {
-                        this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime);
-                    }
+                    if (this.timeModal.editEventIndex === -1) { this.match.timer = newTime; } 
+                    else { this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime); }
                     this.timeModal.open = false;
                 },
-
-                // Score Edit
-                openScoreEdit(team) {
-                    this.scoreModal.team = team;
-                    this.scoreModal.val = team === 'home' ? this.match.scoreHome : this.match.scoreAway;
-                    this.scoreModal.open = true;
-                },
-                saveScoreEdit() {
-                    if(this.scoreModal.team === 'home') this.match.scoreHome = parseInt(this.scoreModal.val);
-                    else this.match.scoreAway = parseInt(this.scoreModal.val);
-                    this.scoreModal.open = false;
-                },
-
-                // Full Event Edit
+                openScoreEdit(team) { this.scoreModal.team = team; this.scoreModal.val = team === 'home' ? this.match.scoreHome : this.match.scoreAway; this.scoreModal.open = true; },
+                saveScoreEdit() { if(this.scoreModal.team === 'home') this.match.scoreHome = parseInt(this.scoreModal.val); else this.match.scoreAway = parseInt(this.scoreModal.val); this.scoreModal.open = false; },
                 openEventEdit(index) {
-                    let ev = this.match.events[index];
-                    this.editModal.index = index;
-                    this.editModal.type = ev.type;
-                    this.editModal.team = ev.team;
-                    let tParts = ev.time.split(':');
-                    this.editModal.min = parseInt(tParts[0]);
-                    this.editModal.sec = parseInt(tParts[1]);
+                    let ev = this.match.events[index]; this.editModal.index = index; this.editModal.type = ev.type; this.editModal.team = ev.team;
+                    let tParts = ev.time.split(':'); this.editModal.min = parseInt(tParts[0]); this.editModal.sec = parseInt(tParts[1]);
                     if(ev.type !== 'sub') this.editModal.playerNum = ev.playerNum;
                     this.editModal.open = true;
                 },
                 saveEventEdit() {
                     let ev = this.match.events[this.editModal.index];
-                    ev.team = this.editModal.team;
-                    ev.time = this.formatTime(parseInt(this.editModal.min) * 60 + parseInt(this.editModal.sec));
-                    
+                    ev.team = this.editModal.team; ev.time = this.formatTime(parseInt(this.editModal.min) * 60 + parseInt(this.editModal.sec));
                     if(ev.type !== 'sub') {
                         let list = ev.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
                         let p = list.find(x => x.num == this.editModal.playerNum);
@@ -505,18 +514,58 @@
                     this.editModal.open = false;
                 },
 
-                // Finish & Clean
+                // Finish & Report
                 finishMatch() {
                     if (!confirm('ნამდვილად გსურთ მატჩის დასრულება?')) return;
                     clearInterval(this.match.timerInterval);
+                    let dateStr = new Date().toLocaleString('ka-GE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
                     
-                    let dateStr = new Date().toLocaleString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-                    
-                    this.history.unshift({ date: dateStr, homeName: this.match.homeName, awayName: this.match.awayName, scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway });
+                    // ვინახავთ აბსოლუტურად ყველაფერს ისტორიაში
+                    this.history.unshift({ 
+                        id: Date.now(), date: dateStr, homeName: this.match.homeName, awayName: this.match.awayName, 
+                        scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway,
+                        homePlayers: JSON.parse(JSON.stringify(this.match.homePlayers)),
+                        awayPlayers: JSON.parse(JSON.stringify(this.match.awayPlayers)),
+                        events: JSON.parse(JSON.stringify(this.match.events))
+                    });
                     localStorage.setItem('matchHistory', JSON.stringify(this.history));
                     this.view = 'history';
                 },
-                clearHistory() { if (confirm('წავშალოთ მთლიანი ისტორია?')) { this.history = []; localStorage.removeItem('matchHistory'); } }
+                
+                viewReport(index) {
+                    this.currentReport = this.history[index];
+                    // სტატისტიკის დათვლა რაპორტისთვის
+                    let stats = { home: { yellow:0, red:0, corner:0 }, away: { yellow:0, red:0, corner:0 } };
+                    this.currentReport.events.forEach(e => {
+                        if(e.type === 'yellow') stats[e.team].yellow++;
+                        if(e.type === 'red') stats[e.team].red++;
+                        if(e.type === 'corner') stats[e.team].corner++;
+                    });
+                    this.currentReport.stats = stats;
+                    this.view = 'report';
+                },
+                
+                deleteReport(index) {
+                    if(confirm('ნამდვილად გსურთ ამ მატჩის ისტორიიდან წაშლა?')) {
+                        this.history.splice(index, 1);
+                        localStorage.setItem('matchHistory', JSON.stringify(this.history));
+                    }
+                },
+                
+                clearHistory() { if (confirm('წავშალოთ მთლიანი ისტორია?')) { this.history = []; localStorage.removeItem('matchHistory'); } },
+
+                // PDF Generate
+                downloadPDF() {
+                    const element = document.getElementById('pdf-content');
+                    const opt = {
+                        margin: 0.2,
+                        filename: `${this.currentReport.homeName}_vs_${this.currentReport.awayName}_Report.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                    };
+                    html2pdf().set(opt).from(element).save();
+                }
             }
         }
     </script>
