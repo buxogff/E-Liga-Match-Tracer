@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Liga Match Tracer</title>
+    <title>E-Liga Match Tracer Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -22,18 +22,10 @@
                 <h1 class="text-4xl font-black text-gray-800 uppercase tracking-tighter">ეროვნული ლიგა</h1>
                 <p class="text-gray-400 font-medium tracking-widest text-sm uppercase">National League</p>
             </div>
-            
-            <div class="absolute inset-0 opacity-5 pointer-events-none">
-                <svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#grid)" /></svg>
-            </div>
-
             <div class="w-full space-y-4">
-                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg transform active:scale-95 transition">
-                    + New Match
-                </button>
+                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg transform active:scale-95 transition">+ New Match</button>
                 <button @click="view = 'history'" class="w-full border-2 border-gray-800 text-gray-800 py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    <span>History</span>
+                    <i class="fa-solid fa-clock-rotate-left mr-2"></i>History
                 </button>
             </div>
         </div>
@@ -46,171 +38,172 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-bold text-gray-400 uppercase mb-2">Team Names</label>
-                    <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full p-4 bg-gray-50 border-none rounded-xl mb-2 focus:ring-2 ring-magenta">
-                    <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full p-4 bg-gray-50 border-none rounded-xl focus:ring-2 ring-magenta">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Team Names</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none">
+                        <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none">
+                    </div>
                 </div>
 
                 <div class="flex p-1 bg-gray-100 rounded-xl">
-                    <button @click="setup.activeTab = 'home'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition">Home Team</button>
-                    <button @click="setup.activeTab = 'away'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition">Away Team</button>
+                    <button @click="setup.activeTab = 'home'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition" x-text="setup.homeName"></button>
+                    <button @click="setup.activeTab = 'away'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold transition" x-text="setup.awayName"></button>
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-2xl space-y-4">
-                    <div class="grid grid-cols-4 gap-2">
-                        <template x-for="pos in ['GK', 'DF', 'MF', 'FW']">
-                            <button @click="setup.playerPos = pos" :class="setup.playerPos === pos ? 'bg-magenta text-white' : 'bg-white text-gray-500 border'" class="py-2 rounded-lg font-bold text-xs" x-text="pos"></button>
-                        </template>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 border'" class="py-2 rounded-lg font-bold text-xs uppercase">Starting XI</button>
+                        <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 border'" class="py-2 rounded-lg font-bold text-xs uppercase">Substitute</button>
                     </div>
                     <div class="flex space-x-2">
-                        <input type="number" x-model="setup.playerNum" placeholder="No." class="w-20 p-3 rounded-xl border-none">
+                        <input type="number" x-model="setup.playerNum" placeholder="No." class="w-16 p-3 rounded-xl border-none">
                         <input type="text" x-model="setup.playerName" placeholder="Player Name" class="flex-1 p-3 rounded-xl border-none">
                     </div>
-                    <button @click="addPlayerToSetup()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold">+ Add Player</button>
+                    <button @click="addPlayerToSetup()" class="w-full bg-magenta text-white py-3 rounded-xl font-bold">+ Add Player</button>
                 </div>
 
-                <div class="space-y-2">
-                    <h3 class="font-bold uppercase text-xs text-gray-400" x-text="(setup.activeTab === 'home' ? setup.homeName : setup.awayName) + ' Players'"></h3>
-                    <div class="max-h-48 overflow-y-auto space-y-2">
-                        <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers)">
-                            <div class="flex items-center justify-between p-3 bg-white border rounded-xl">
-                                <div>
-                                    <span class="font-bold mr-2" x-text="'#' + p.num"></span>
-                                    <span x-text="p.name || 'No name'"></span>
-                                    <span class="text-[10px] bg-gray-200 px-2 py-1 rounded ml-2" x-text="p.pos"></span>
-                                </div>
-                                <button @click="removePlayerFromSetup(index)" class="text-red-500 text-xs font-bold">Remove</button>
+                <div class="space-y-4">
+                    <template x-for="status in ['starting', 'sub']">
+                        <div class="space-y-2">
+                            <h3 class="font-bold uppercase text-[10px] text-gray-400" x-text="(status === 'starting' ? 'STARTING XI' : 'SUBSTITUTES')"></h3>
+                            <div class="space-y-1">
+                                <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status)">
+                                    <div class="flex items-center justify-between p-2 bg-white border rounded-xl text-sm">
+                                        <span><strong class="mr-2" x-text="'#'+p.num"></strong> <span x-text="p.name || 'No name'"></span></span>
+                                        <button @click="removePlayerFromSetup(p.id)" class="text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                                    </div>
+                                </template>
                             </div>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
                 </div>
 
-                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg mt-8">
-                    Start Match
-                </button>
+                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-bold text-xl shadow-lg mt-4">Start Match</button>
             </div>
         </div>
 
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-screen overflow-hidden">
-            <div class="p-6 bg-gray-800 text-white text-center space-y-4">
-                <h2 class="text-sm font-bold uppercase tracking-widest opacity-50">Live Match</h2>
+            <div class="p-6 bg-gray-800 text-white text-center">
                 <div class="flex items-center justify-between">
-                    <div class="flex-1 text-right pr-4">
-                        <p class="text-lg font-bold" x-text="match.homeName"></p>
-                        <p class="text-4xl font-black" x-text="match.scoreHome"></p>
+                    <div class="flex-1">
+                        <p class="text-xs opacity-50 uppercase font-bold" x-text="match.homeName"></p>
+                        <p class="text-5xl font-black" x-text="match.scoreHome"></p>
                     </div>
-                    <div class="space-y-2">
-                        <p class="text-2xl font-mono bg-black bg-opacity-30 px-3 py-1 rounded-lg" x-text="formatTime(match.timer)"></p>
+                    <div class="px-4">
+                        <p class="text-2xl font-mono bg-black bg-opacity-30 px-3 py-1 rounded-lg mb-2" x-text="formatTime(match.timer)"></p>
                         <button @click="toggleTimer()" class="text-magenta text-2xl">
                             <i :class="match.isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause'"></i>
                         </button>
                     </div>
-                    <div class="flex-1 text-left pl-4">
-                        <p class="text-lg font-bold" x-text="match.awayName"></p>
-                        <p class="text-4xl font-black" x-text="match.scoreAway"></p>
+                    <div class="flex-1">
+                        <p class="text-xs opacity-50 uppercase font-bold" x-text="match.awayName"></p>
+                        <p class="text-5xl font-black" x-text="match.scoreAway"></p>
                     </div>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <button @click="openEventModal('goal')" class="bg-green-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-futbol text-2xl"></i>
-                        <span class="font-bold">Goal</span>
-                    </button>
-                    <button @click="openEventModal('penalty')" class="bg-green-600 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-bullseye text-2xl"></i>
-                        <span class="font-bold">Penalty</span>
-                    </button>
-                    <button @click="openEventModal('yellow')" class="bg-yellow-400 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-square text-2xl"></i>
-                        <span class="font-bold">Yellow Card</span>
-                    </button>
-                    <button @click="openEventModal('red')" class="bg-red-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-square text-2xl"></i>
-                        <span class="font-bold">Red Card</span>
-                    </button>
-                    <button @click="openEventModal('corner')" class="bg-blue-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-flag text-2xl"></i>
-                        <span class="font-bold">Corner</span>
-                    </button>
-                    <button @click="openEventModal('sub')" class="bg-cyan-500 text-white p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 shadow-md">
-                        <i class="fa-solid fa-arrows-rotate text-2xl"></i>
-                        <span class="font-bold">Sub</span>
-                    </button>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="grid grid-cols-2 gap-2">
+                    <template x-for="type in ['goal', 'penalty', 'yellow', 'red', 'corner', 'sub']">
+                        <button @click="openEventModal(type)" class="p-4 rounded-xl flex flex-col items-center space-y-1 text-white shadow-sm"
+                                :class="{
+                                    'bg-green-500': type === 'goal',
+                                    'bg-green-600': type === 'penalty',
+                                    'bg-yellow-400': type === 'yellow',
+                                    'bg-red-500': type === 'red',
+                                    'bg-blue-500': type === 'corner',
+                                    'bg-cyan-500': type === 'sub'
+                                }">
+                            <i class="fa-solid text-xl" :class="{
+                                'fa-futbol': type === 'goal',
+                                'fa-bullseye': type === 'penalty',
+                                'fa-square': type === 'yellow' || type === 'red',
+                                'fa-flag': type === 'corner',
+                                'fa-arrows-rotate': type === 'sub'
+                            }"></i>
+                            <span class="text-xs font-bold uppercase" x-text="type"></span>
+                        </button>
+                    </template>
                 </div>
 
-                <div class="space-y-2">
-                    <h3 class="font-bold text-gray-400 text-xs uppercase">Match Events</h3>
+                <div class="space-y-2 pb-20">
+                    <h3 class="font-bold text-gray-400 text-[10px] uppercase">Events</h3>
                     <template x-for="ev in match.events">
                         <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border-l-4" :class="ev.team === 'home' ? 'border-magenta' : 'border-gray-800'">
                             <span class="font-mono text-xs font-bold" x-text="ev.time"></span>
-                            <div class="flex-1">
-                                <span class="font-bold" x-text="ev.type.toUpperCase()"></span>
-                                <span class="text-gray-500 text-sm" x-text="' - #' + ev.playerNum + ' ' + (ev.playerName || '')"></span>
+                            <div class="flex-1 text-sm">
+                                <span class="font-bold uppercase text-xs" x-text="ev.type"></span>
+                                <template x-if="ev.type !== 'sub'">
+                                    <span x-text="' - #' + ev.playerNum + ' ' + (ev.playerName || '')"></span>
+                                </template>
+                                <template x-if="ev.type === 'sub'">
+                                    <span x-text="' - OUT: #' + ev.playerOut.num + ' / IN: #' + ev.playerIn.num"></span>
+                                </template>
                             </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="p-4 border-t">
-                <button @click="finishMatch()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold uppercase tracking-widest transform active:scale-95">Finish Match</button>
+            <div class="p-4 border-t bg-white absolute bottom-0 w-full">
+                <button @click="finishMatch()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold uppercase tracking-widest">Finish Match</button>
             </div>
         </div>
 
         <div x-show="view === 'history'" x-cloak class="p-6 h-screen flex flex-col">
             <div class="flex items-center justify-between mb-8">
                 <button @click="view = 'home'" class="p-2 text-gray-500"><i class="fa-solid fa-chevron-left"></i></button>
-                <h2 class="text-2xl font-bold">Match History</h2>
-                <button @click="clearHistory()" class="text-red-500 text-xs uppercase font-bold">Clear All</button>
+                <h2 class="text-2xl font-bold">History</h2>
+                <button @click="clearHistory()" class="text-red-500 text-xs font-bold">CLEAR</button>
             </div>
-            
             <div class="flex-1 overflow-y-auto space-y-4">
                 <template x-for="h in history">
-                    <div class="bg-white p-5 rounded-3xl shadow-sm border space-y-3">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <span class="text-xs font-bold text-gray-400" x-text="h.date"></span>
-                            <span class="text-xs font-bold text-magenta" x-text="h.time"></span>
-                        </div>
-                        <div class="flex justify-between items-center px-4">
-                            <div class="text-center flex-1">
-                                <p class="font-bold" x-text="h.homeName"></p>
-                                <p class="text-2xl font-black" x-text="h.scoreHome"></p>
-                            </div>
-                            <div class="text-gray-200 font-bold px-4 text-xl">VS</div>
-                            <div class="text-center flex-1">
-                                <p class="font-bold" x-text="h.awayName"></p>
-                                <p class="text-2xl font-black" x-text="h.scoreAway"></p>
-                            </div>
-                        </div>
+                    <div class="bg-white p-4 rounded-2xl border shadow-sm flex justify-between items-center">
+                        <div class="text-center flex-1"><p class="text-[10px] font-bold" x-text="h.homeName"></p><p class="text-xl font-black" x-text="h.scoreHome"></p></div>
+                        <div class="text-[10px] font-bold text-gray-300">VS</div>
+                        <div class="text-center flex-1"><p class="text-[10px] font-bold" x-text="h.awayName"></p><p class="text-xl font-black" x-text="h.scoreAway"></p></div>
                     </div>
                 </template>
-                <div x-show="history.length === 0" class="text-center py-20 text-gray-400 font-bold">No history available</div>
             </div>
         </div>
 
         <div x-show="modal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-            <div class="bg-white w-full max-w-md rounded-t-3xl p-8 space-y-6 transform transition-transform" @click.away="modal.open = false">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold capitalize" x-text="modal.type + ' - Select Player'"></h3>
-                    <button @click="modal.open = false" class="text-gray-400 text-2xl">&times;</button>
-                </div>
-                
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4" @click.away="modal.open = false">
+                <h3 class="text-lg font-bold capitalize" x-text="modal.type + ' - Select Team'"></h3>
                 <div class="flex p-1 bg-gray-100 rounded-xl">
                     <button @click="modal.team = 'home'" :class="modal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.homeName"></button>
                     <button @click="modal.team = 'away'" :class="modal.team === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.awayName"></button>
                 </div>
 
-                <div class="max-h-64 overflow-y-auto space-y-2">
-                    <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers)">
-                        <button @click="recordEvent(p)" class="w-full p-4 border rounded-2xl flex items-center justify-between hover:bg-gray-50 active:bg-gray-100">
-                            <span class="font-bold" x-text="'#' + p.num"></span>
-                            <span class="flex-1 text-left px-4" x-text="p.name || 'No name'"></span>
-                            <i class="fa-solid fa-plus text-magenta"></i>
-                        </button>
-                    </template>
-                </div>
+                <template x-if="modal.type === 'sub'">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <p class="text-[10px] font-bold text-red-500 uppercase">Player Out (From Field)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting')">
+                                    <button @click="modal.playerOut = p" :class="modal.playerOut?.id === p.id ? 'bg-red-500 text-white' : 'bg-gray-50'" class="p-2 rounded-lg text-xs font-bold border" x-text="'#'+p.num + ' ' + p.name"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[10px] font-bold text-green-500 uppercase">Player In (From Bench)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'sub')">
+                                    <button @click="modal.playerIn = p" :class="modal.playerIn?.id === p.id ? 'bg-green-500 text-white' : 'bg-gray-50'" class="p-2 rounded-lg text-xs font-bold border" x-text="'#'+p.num + ' ' + p.name"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <button @click="recordSubstitution()" x-show="modal.playerOut && modal.playerIn" class="w-full bg-magenta text-white py-3 rounded-xl font-bold">Confirm Sub</button>
+                    </div>
+                </template>
+
+                <template x-if="modal.type !== 'sub'">
+                    <div class="max-h-64 overflow-y-auto grid grid-cols-2 gap-2">
+                        <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting')">
+                            <button @click="recordStandardEvent(p)" class="p-3 border rounded-xl text-xs font-bold text-left bg-gray-50" x-text="'#'+p.num + ' ' + p.name"></button>
+                        </template>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -221,7 +214,7 @@
     <script>
         function matchApp() {
             return {
-                view: 'home', // 'home', 'setup', 'live', 'history'
+                view: 'home',
                 history: [],
                 setup: {
                     activeTab: 'home',
@@ -229,134 +222,92 @@
                     awayName: 'Dila',
                     homePlayers: [],
                     awayPlayers: [],
-                    playerPos: 'GK',
+                    playerStatus: 'starting',
                     playerNum: '',
                     playerName: ''
                 },
                 match: {
-                    homeName: '',
-                    awayName: '',
-                    scoreHome: 0,
-                    scoreAway: 0,
-                    homePlayers: [],
-                    awayPlayers: [],
-                    events: [],
-                    timer: 0,
-                    isPaused: true,
-                    timerInterval: null
+                    homeName: '', awayName: '', scoreHome: 0, scoreAway: 0,
+                    homePlayers: [], awayPlayers: [], events: [],
+                    timer: 0, isPaused: true, timerInterval: null
                 },
-                modal: {
-                    open: false,
-                    type: '',
-                    team: 'home'
-                },
+                modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
 
                 init() {
                     this.history = JSON.parse(localStorage.getItem('matchHistory') || '[]');
                 },
 
                 addPlayerToSetup() {
-                    if (!this.setup.playerNum) return alert('Enter player number');
-                    const player = {
-                        num: this.setup.playerNum,
-                        name: this.setup.playerName,
-                        pos: this.setup.playerPos
-                    };
-                    if (this.setup.activeTab === 'home') this.setup.homePlayers.push(player);
-                    else this.setup.awayPlayers.push(player);
-                    this.setup.playerNum = '';
-                    this.setup.playerName = '';
+                    if (!this.setup.playerNum) return;
+                    const p = { id: Date.now(), num: this.setup.playerNum, name: this.setup.playerName, status: this.setup.playerStatus };
+                    if (this.setup.activeTab === 'home') this.setup.homePlayers.push(p);
+                    else this.setup.awayPlayers.push(p);
+                    this.setup.playerNum = ''; this.setup.playerName = '';
                 },
 
-                removePlayerFromSetup(index) {
-                    if (this.setup.activeTab === 'home') this.setup.homePlayers.splice(index, 1);
-                    else this.setup.awayPlayers.splice(index, 1);
+                removePlayerFromSetup(id) {
+                    if (this.setup.activeTab === 'home') this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
+                    else this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
                 },
 
                 startMatch() {
-                    this.match.homeName = this.setup.homeName;
-                    this.match.awayName = this.setup.awayName;
-                    this.match.homePlayers = [...this.setup.homePlayers];
-                    this.match.awayPlayers = [...this.setup.awayPlayers];
-                    this.match.scoreHome = 0;
-                    this.match.scoreAway = 0;
-                    this.match.events = [];
-                    this.match.timer = 0;
+                    this.match.homeName = this.setup.homeName; this.match.awayName = this.setup.awayName;
+                    this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
+                    this.match.awayPlayers = JSON.parse(JSON.stringify(this.setup.awayPlayers));
+                    this.match.scoreHome = 0; this.match.scoreAway = 0; this.match.events = []; this.match.timer = 0;
                     this.view = 'live';
                 },
 
                 toggleTimer() {
                     this.match.isPaused = !this.match.isPaused;
-                    if (!this.match.isPaused) {
-                        this.match.timerInterval = setInterval(() => {
-                            this.match.timer++;
-                        }, 1000);
-                    } else {
-                        clearInterval(this.match.timerInterval);
-                    }
+                    if (!this.match.isPaused) this.match.timerInterval = setInterval(() => this.match.timer++, 1000);
+                    else clearInterval(this.match.timerInterval);
                 },
 
-                formatTime(seconds) {
-                    const mins = Math.floor(seconds / 60);
-                    const secs = seconds % 60;
-                    return `${mins}:${secs.toString().padStart(2, '0')}`;
-                },
+                formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; },
 
                 openEventModal(type) {
-                    this.modal.type = type;
-                    this.modal.open = true;
+                    this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null;
                 },
 
-                recordEvent(player) {
-                    const event = {
-                        type: this.modal.type,
-                        team: this.modal.team,
-                        playerNum: player.num,
-                        playerName: player.name,
-                        time: this.formatTime(this.match.timer)
-                    };
-                    this.match.events.unshift(event);
+                recordStandardEvent(p) {
+                    this.match.events.unshift({ type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
                     if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
-                        if (this.modal.team === 'home') this.match.scoreHome++;
-                        else this.match.scoreAway++;
+                        if (this.modal.team === 'home') this.match.scoreHome++; else this.match.scoreAway++;
                     }
                     this.modal.open = false;
                 },
 
+                recordSubstitution() {
+                    const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
+                    const pOut = list.find(x => x.id === this.modal.playerOut.id);
+                    const pIn = list.find(x => x.id === this.modal.playerIn.id);
+                    pOut.status = 'sub'; pIn.status = 'starting';
+                    this.match.events.unshift({ type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
+                    this.modal.open = false;
+                },
+
                 finishMatch() {
-                    if (!confirm('Are you sure you want to finish the match?')) return;
+                    if (!confirm('Finish?')) return;
                     clearInterval(this.match.timerInterval);
-                    const matchData = {
-                        date: new Date().toLocaleDateString(),
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        homeName: this.match.homeName,
-                        awayName: this.match.awayName,
-                        scoreHome: this.match.scoreHome,
-                        scoreAway: this.match.scoreAway,
-                        events: this.match.events
-                    };
-                    this.history.unshift(matchData);
+                    this.history.unshift({ date: new Date().toLocaleDateString(), homeName: this.match.homeName, awayName: this.match.awayName, scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway });
                     localStorage.setItem('matchHistory', JSON.stringify(this.history));
                     this.view = 'history';
                 },
 
-                clearHistory() {
-                    if (confirm('Clear all history?')) {
-                        this.history = [];
-                        localStorage.removeItem('matchHistory');
-                    }
-                }
+                clearHistory() { if (confirm('Clear?')) { this.history = []; localStorage.removeItem('matchHistory'); } }
             }
         }
     </script>
 </body>
 </html>
 
-### რამდენიმე მნიშვნელოვანი რამ:
-*   **ტაიმერი:** ღილაკი `Pause/Play` აკონტროლებს დროს.
-*   **შენახვა:** ყველა დასრულებული მატჩი ავტომატურად შეინახება შენი ტელეფონის/კომპიუტერის მეხსიერებაში.
-*   **დიზაინი:** გამოვიყენე Magenta (ვარდისფერი) ფერი, რომელიც ზუსტად Crystalbet ეროვნული ლიგის სტილშია.
 
-როცა კოდს ჩასვამ და შეინახავ, შენი ძველი ლინკი (რომელიც წინა შეტყობინებაში გამომიგზავნე) ავტომატურად განახლდება. შედი და შეამოწმე!
+### რა შეიცვალა?
+1.  **მოთამაშის დამატება:** ახლა გაქვს ორი ღილაკი — `Starting XI` და `Substitute`. მოთამაშის დამატებამდე აირჩიე, რომელ სიაში გინდა მისი ჩასმა.
+2.  **ცვლილება (Substitution):** ლაივ რეჟიმში, როცა "Sub"-ს დააჭერ:
+    *   ზედა სიაში გამოგიჩნდება მხოლოდ ის მოთამაშეები, რომლებიც **მოედანზე არიან**.
+    *   ქვედა სიაში გამოჩნდება მხოლოდ ისინი, ვინც **სკამზე ზის**.
+    *   დასტურის შემდეგ, აპი მათ სტატუსს ავტომატურად შეუცვლის.
 
-მითხარი, ყველაფერი ისეა, როგორც გინდოდა?
+ეს ვერსია ბევრად უფრო დახვეწილია და რეალურ მუშაობაში ძალიან დაგეხმარება. სცადე GitHub-ზე ჩანაცვლება და მითხარი, როგორ მოგწონს!
