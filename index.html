@@ -40,7 +40,7 @@
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Team Names</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none">
+                        <input type="text" x-model="setup.homeName" placeholder="FC Grand Tbilisi" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none">
                         <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full p-3 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none">
                     </div>
                 </div>
@@ -85,19 +85,18 @@
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-screen overflow-hidden">
             <div class="p-6 bg-gray-800 text-white text-center">
                 <div class="flex items-center justify-between">
-                    <div class="flex-1 cursor-pointer" @click="let val = prompt('Edit Home Score:', match.scoreHome); if(val !== null && val !== '') match.scoreHome = parseInt(val)">
+                    <div class="flex-1 cursor-pointer" @click="openScoreEdit('home')">
                         <p class="text-xs opacity-50 uppercase font-bold" x-text="match.homeName"></p>
                         <p class="text-5xl font-black" x-text="match.scoreHome"></p>
                     </div>
                     <div class="px-4">
-                        <p class="text-2xl font-mono bg-black bg-opacity-30 px-3 py-1 rounded-lg mb-2 cursor-pointer" 
-                           @click="let val = prompt('Edit Time (in seconds, e.g., 2700 for 45:00):', match.timer); if(val !== null && val !== '') match.timer = parseInt(val)" 
-                           x-text="formatTime(match.timer)"></p>
+                        <p class="text-2xl font-mono bg-black bg-opacity-30 px-3 py-1 rounded-lg mb-2 cursor-pointer hover:text-magenta transition" 
+                           @click="openTimeEdit()" x-text="formatTime(match.timer)"></p>
                         <button @click="toggleTimer()" class="text-magenta text-2xl">
                             <i :class="match.isPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause'"></i>
                         </button>
                     </div>
-                    <div class="flex-1 cursor-pointer" @click="let val = prompt('Edit Away Score:', match.scoreAway); if(val !== null && val !== '') match.scoreAway = parseInt(val)">
+                    <div class="flex-1 cursor-pointer" @click="openScoreEdit('away')">
                         <p class="text-xs opacity-50 uppercase font-bold" x-text="match.awayName"></p>
                         <p class="text-5xl font-black" x-text="match.scoreAway"></p>
                     </div>
@@ -128,13 +127,12 @@
                     </template>
                 </div>
 
-                <div class="space-y-2 pb-20">
+                <div class="space-y-2 pb-24">
                     <h3 class="font-bold text-gray-400 text-[10px] uppercase">Events</h3>
                     <template x-for="(ev, index) in match.events">
                         <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border-l-4" :class="ev.team === 'home' ? 'border-magenta' : 'border-gray-800'">
-                            <span class="font-mono text-xs font-bold underline cursor-pointer" 
-                                  @click="let val = prompt('Edit Event Time (e.g. 45:00):', ev.time); if(val !== null && val !== '') ev.time = val" 
-                                  x-text="ev.time"></span>
+                            <span class="font-mono text-xs font-bold bg-gray-200 px-2 py-1 rounded" x-text="ev.time"></span>
+                            
                             <div class="flex-1 text-sm">
                                 <span class="font-bold uppercase text-xs" x-text="ev.type"></span>
                                 <template x-if="ev.type !== 'sub'">
@@ -144,15 +142,17 @@
                                     <span x-text="' - OUT: #' + ev.playerOut.num + ' / IN: #' + ev.playerIn.num"></span>
                                 </template>
                             </div>
-                            <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) match.events.splice(index, 1)" class="text-red-400 p-2">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                            
+                            <div class="flex space-x-2">
+                                <button @click="openEventEdit(index)" class="text-blue-500 p-2"><i class="fa-solid fa-pen"></i></button>
+                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) match.events.splice(index, 1)" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <div class="p-4 border-t bg-white absolute bottom-0 w-full">
+            <div class="p-4 border-t bg-white absolute bottom-0 w-full z-10">
                 <button @click="finishMatch()" class="w-full bg-gray-800 text-white py-4 rounded-2xl font-bold uppercase tracking-widest">Finish Match</button>
             </div>
         </div>
@@ -176,7 +176,11 @@
 
         <div x-show="modal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4" @click.away="modal.open = false">
-                <h3 class="text-lg font-bold capitalize" x-text="modal.type + ' - Select Team'"></h3>
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold capitalize" x-text="modal.type + ' - Select Team'"></h3>
+                    <button @click="modal.open = false" class="text-gray-400 text-2xl">&times;</button>
+                </div>
+                
                 <div class="flex p-1 bg-gray-100 rounded-xl">
                     <button @click="modal.team = 'home'" :class="modal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.homeName"></button>
                     <button @click="modal.team = 'away'" :class="modal.team === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-bold" x-text="match.awayName"></button>
@@ -214,6 +218,91 @@
             </div>
         </div>
 
+        <div x-show="timeModal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4" @click.away="timeModal.open = false">
+                <h3 class="font-bold text-lg text-center">დროის რედაქტირება</h3>
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-bold uppercase">წუთი</label>
+                        <select x-model="timeModal.min" class="w-full p-3 bg-gray-50 border rounded-xl font-mono text-lg">
+                            <template x-for="i in 121">
+                                <option :value="i-1" x-text="i-1"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-500 font-bold uppercase">წამი</label>
+                        <select x-model="timeModal.sec" class="w-full p-3 bg-gray-50 border rounded-xl font-mono text-lg">
+                            <template x-for="i in 60">
+                                <option :value="i-1" x-text="i-1"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <button @click="saveTimeEdit()" class="w-full bg-magenta text-white py-3 rounded-xl font-bold mt-4">შენახვა</button>
+            </div>
+        </div>
+
+        <div x-show="scoreModal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4 text-center" @click.away="scoreModal.open = false">
+                <h3 class="font-bold text-gray-400 uppercase text-xs" x-text="(scoreModal.team === 'home' ? match.homeName : match.awayName) + ' - ანგარიში'"></h3>
+                <div class="flex items-center justify-center space-x-6 py-4">
+                    <button @click="if(scoreModal.val > 0) scoreModal.val--" class="w-12 h-12 rounded-full bg-gray-100 text-2xl font-bold">-</button>
+                    <span class="text-5xl font-black" x-text="scoreModal.val"></span>
+                    <button @click="scoreModal.val++" class="w-12 h-12 rounded-full bg-gray-100 text-2xl font-bold">+</button>
+                </div>
+                <button @click="saveScoreEdit()" class="w-full bg-magenta text-white py-3 rounded-xl font-bold">შენახვა</button>
+            </div>
+        </div>
+
+        <div x-show="editModal.open" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-3xl w-11/12 max-w-sm space-y-4" @click.away="editModal.open = false">
+                <h3 class="font-bold text-lg text-center uppercase" x-text="editModal.type + ' Edit'"></h3>
+                
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">წუთი</label>
+                        <select x-model="editModal.min" class="w-full p-2 bg-gray-50 border rounded-lg font-mono">
+                            <template x-for="i in 121"><option :value="i-1" x-text="i-1"></option></template>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">წამი</label>
+                        <select x-model="editModal.sec" class="w-full p-2 bg-gray-50 border rounded-lg font-mono">
+                            <template x-for="i in 60"><option :value="i-1" x-text="i-1"></option></template>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] text-gray-500 font-bold uppercase">გუნდი</label>
+                    <div class="flex p-1 bg-gray-100 rounded-lg mt-1">
+                        <button @click="editModal.team = 'home'" :class="editModal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-2 rounded text-sm font-bold" x-text="match.homeName"></button>
+                        <button @click="editModal.team = 'away'" :class="editModal.team === 'away' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-2 rounded text-sm font-bold" x-text="match.awayName"></button>
+                    </div>
+                </div>
+
+                <template x-if="editModal.type !== 'sub'">
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-bold uppercase">მოთამაშე</label>
+                        <select x-model="editModal.playerNum" class="w-full p-3 mt-1 bg-gray-50 border rounded-lg text-sm font-bold">
+                            <template x-for="p in (editModal.team === 'home' ? match.homePlayers : match.awayPlayers)">
+                                <option :value="p.num" x-text="'#' + p.num + ' ' + (p.name || '')"></option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+                <template x-if="editModal.type === 'sub'">
+                    <p class="text-xs text-orange-500 bg-orange-50 p-2 rounded text-center">Sub მოთამაშეების შესაცვლელად გთხოვთ წაშალოთ ეს მოვლენა და თავიდან დაამატოთ.</p>
+                </template>
+
+                <div class="flex space-x-2 pt-2">
+                    <button @click="editModal.open = false" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">გაუქმება</button>
+                    <button @click="saveEventEdit()" class="flex-1 bg-magenta text-white py-3 rounded-xl font-bold">შენახვა</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -224,26 +313,25 @@
                 view: 'home',
                 history: [],
                 setup: {
-                    activeTab: 'home',
-                    homeName: 'Gagra',
-                    awayName: 'Dila',
-                    homePlayers: [],
-                    awayPlayers: [],
-                    playerStatus: 'starting',
-                    playerNum: '',
-                    playerName: ''
+                    activeTab: 'home', homeName: 'Gagra', awayName: 'Dila', homePlayers: [], awayPlayers: [],
+                    playerStatus: 'starting', playerNum: '', playerName: ''
                 },
                 match: {
                     homeName: '', awayName: '', scoreHome: 0, scoreAway: 0,
-                    homePlayers: [], awayPlayers: [], events: [],
-                    timer: 0, isPaused: true, timerInterval: null
+                    homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, timerInterval: null
                 },
                 modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
+                
+                // ახალი მენიუების State-ები
+                timeModal: { open: false, min: 0, sec: 0 },
+                scoreModal: { open: false, team: '', val: 0 },
+                editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
 
                 init() {
                     this.history = JSON.parse(localStorage.getItem('matchHistory') || '[]');
                 },
 
+                // Setup Functions
                 addPlayerToSetup() {
                     if (!this.setup.playerNum) return;
                     const p = { id: Date.now(), num: this.setup.playerNum, name: this.setup.playerName, status: this.setup.playerStatus };
@@ -251,12 +339,10 @@
                     else this.setup.awayPlayers.push(p);
                     this.setup.playerNum = ''; this.setup.playerName = '';
                 },
-
                 removePlayerFromSetup(id) {
                     if (this.setup.activeTab === 'home') this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
                     else this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
                 },
-
                 startMatch() {
                     this.match.homeName = this.setup.homeName; this.match.awayName = this.setup.awayName;
                     this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
@@ -265,6 +351,7 @@
                     this.view = 'live';
                 },
 
+                // Timer
                 toggleTimer() {
                     this.match.isPaused = !this.match.isPaused;
                     if (!this.match.isPaused) {
@@ -276,17 +363,14 @@
                                 alert('პირველი ტაიმი დასრულდა! (45 წუთი)');
                             }
                         }, 1000);
-                    } else {
-                        clearInterval(this.match.timerInterval);
-                    }
+                    } else { clearInterval(this.match.timerInterval); }
                 },
-
                 formatTime(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; },
 
+                // Event Recording
                 openEventModal(type) {
                     this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null;
                 },
-
                 recordStandardEvent(p) {
                     this.match.events.unshift({ type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
                     if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
@@ -294,7 +378,6 @@
                     }
                     this.modal.open = false;
                 },
-
                 recordSubstitution() {
                     const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
                     const pOut = list.find(x => x.id === this.modal.playerOut.id);
@@ -304,6 +387,56 @@
                     this.modal.open = false;
                 },
 
+                // --- EDIT FUNCTIONS ---
+
+                // 1. Time Edit
+                openTimeEdit() {
+                    this.timeModal.min = Math.floor(this.match.timer / 60);
+                    this.timeModal.sec = this.match.timer % 60;
+                    this.timeModal.open = true;
+                },
+                saveTimeEdit() {
+                    this.match.timer = parseInt(this.timeModal.min) * 60 + parseInt(this.timeModal.sec);
+                    this.timeModal.open = false;
+                },
+
+                // 2. Score Edit
+                openScoreEdit(team) {
+                    this.scoreModal.team = team;
+                    this.scoreModal.val = team === 'home' ? this.match.scoreHome : this.match.scoreAway;
+                    this.scoreModal.open = true;
+                },
+                saveScoreEdit() {
+                    if(this.scoreModal.team === 'home') this.match.scoreHome = parseInt(this.scoreModal.val);
+                    else this.match.scoreAway = parseInt(this.scoreModal.val);
+                    this.scoreModal.open = false;
+                },
+
+                // 3. Event Edit
+                openEventEdit(index) {
+                    let ev = this.match.events[index];
+                    this.editModal.index = index;
+                    this.editModal.type = ev.type;
+                    this.editModal.team = ev.team;
+                    let tParts = ev.time.split(':');
+                    this.editModal.min = parseInt(tParts[0]);
+                    this.editModal.sec = parseInt(tParts[1]);
+                    if(ev.type !== 'sub') this.editModal.playerNum = ev.playerNum;
+                    this.editModal.open = true;
+                },
+                saveEventEdit() {
+                    let ev = this.match.events[this.editModal.index];
+                    ev.team = this.editModal.team;
+                    ev.time = `${this.editModal.min}:${this.editModal.sec.toString().padStart(2,'0')}`;
+                    if(ev.type !== 'sub') {
+                        let list = ev.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
+                        let p = list.find(x => x.num == this.editModal.playerNum);
+                        if(p) { ev.playerNum = p.num; ev.playerName = p.name; }
+                    }
+                    this.editModal.open = false;
+                },
+
+                // Finish & Clean
                 finishMatch() {
                     if (!confirm('ნამდვილად გსურთ მატჩის დასრულება?')) return;
                     clearInterval(this.match.timerInterval);
@@ -311,7 +444,6 @@
                     localStorage.setItem('matchHistory', JSON.stringify(this.history));
                     this.view = 'history';
                 },
-
                 clearHistory() { if (confirm('წავშალოთ მთლიანი ისტორია?')) { this.history = []; localStorage.removeItem('matchHistory'); } }
             }
         }
