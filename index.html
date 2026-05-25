@@ -35,13 +35,11 @@
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col">
         
         <div x-show="view === 'home'" class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
-            
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
             <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
             <div class="absolute top-1/3 right-[-40px] w-32 h-32 bg-eliga-blue opacity-5 shape-polygon transform rotate-45"></div>
             <div class="absolute bottom-1/3 left-[-20px] w-24 h-24 bg-magenta opacity-10 shape-triangle-2 transform -rotate-12"></div>
-            <div class="absolute top-[10%] right-[20%] w-12 h-12 bg-eliga-cyan opacity-20 shape-triangle-1 transform rotate-90"></div>
-
+            
             <div class="relative z-10 space-y-4 w-full">
                 <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl transform rotate-3">
                     <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain transform -rotate-3">
@@ -55,11 +53,7 @@
                 <button x-show="hasActiveMatch" @click="resumeMatch()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg transform active:scale-95 transition flex justify-center items-center">
                     <i class="fa-solid fa-play mr-2"></i> გააგრძელე მატჩი
                 </button>
-                
-                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide">
-                    + NEW MATCH
-                </button>
-                
+                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide">+ NEW MATCH</button>
                 <button @click="view = 'history'" class="w-full border-2 border-eliga-blue text-eliga-blue py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition hover:bg-blue-50">
                     <i class="fa-solid fa-clock-rotate-left mr-2"></i> HISTORY
                 </button>
@@ -91,12 +85,10 @@
                         <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase transition tracking-wider">Starting XI</button>
                         <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase transition tracking-wider">Substitute</button>
                     </div>
-                    
                     <div class="flex gap-2">
                         <input type="number" x-model="setup.playerNum" placeholder="No." autocomplete="off" class="w-1/4 min-w-0 appearance-none p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta transition">
                         <input type="text" x-model="setup.playerName" placeholder="Player Name" autocomplete="off" class="w-3/4 min-w-0 appearance-none p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta transition">
                     </div>
-                    
                     <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                 </div>
 
@@ -123,35 +115,43 @@
                         </div>
                     </template>
                 </div>
-
                 <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 mt-6 tracking-widest uppercase">Start Match</button>
             </div>
         </div>
 
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
-            <div class="p-6 bg-eliga-blue text-white text-center relative shadow-lg z-20">
-                <button @click="view = 'home'" class="absolute top-6 left-6 text-gray-400 hover:text-white transition"><i class="fa-solid fa-house"></i></button>
+            
+            <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 
-                <div class="flex items-center justify-between mt-4">
-                    <div class="flex-1 cursor-pointer hover:bg-white/10 rounded-xl p-2 transition" @click="openScoreEdit('home')">
-                        <p class="text-[10px] opacity-70 uppercase font-bold tracking-widest text-eliga-cyan" x-text="match.homeName"></p>
-                        <p class="text-6xl font-black mt-1" x-text="match.scoreHome"></p>
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-[#00bce4] opacity-20 rounded-full blur-2xl transform -translate-x-1/3 translate-y-1/3"></div>
+                
+                <button @click="view = 'home'" class="absolute top-6 left-6 text-white/60 hover:text-white transition z-10"><i class="fa-solid fa-house text-xl"></i></button>
+                
+                <div class="flex items-center justify-between mt-6 relative z-10">
+                    <div class="flex-1 cursor-pointer group text-center" @click="openScoreEdit('home')">
+                        <p class="text-[10px] uppercase font-bold tracking-widest text-[#00bce4] opacity-90 group-hover:text-white transition mb-1 truncate px-1" x-text="match.homeName"></p>
+                        <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreHome"></p>
                     </div>
-                    <div class="px-4 flex flex-col items-center">
-                        <p class="text-3xl font-black font-mono tracking-widest bg-black/30 px-5 py-2 rounded-xl mb-3 cursor-pointer hover:text-eliga-cyan transition border border-white/10 shadow-inner" 
-                           @click="openTimeEdit()" x-text="formatTime(match.timer)"></p>
-                        <button @click="toggleTimer()" class="text-magenta text-4xl transform active:scale-90 transition drop-shadow-md">
-                            <i :class="match.isPaused ? 'fa-solid fa-circle-play' : 'fa-solid fa-circle-pause'"></i>
+                    
+                    <div class="px-2 flex flex-col items-center">
+                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] cursor-pointer hover:bg-black/30 transition group" @click="openTimeEdit()">
+                            <p class="text-4xl font-black font-mono tracking-wider text-white group-hover:text-[#00bce4] transition drop-shadow-md" x-text="formatTime(match.timer)"></p>
+                        </div>
+                        <button @click="toggleTimer()" class="mt-5 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transform active:scale-95 transition"
+                                :class="match.isPaused ? 'bg-white text-[#2e3192]' : 'bg-magenta text-white'">
+                            <i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i>
                         </button>
                     </div>
-                    <div class="flex-1 cursor-pointer hover:bg-white/10 rounded-xl p-2 transition" @click="openScoreEdit('away')">
-                        <p class="text-[10px] opacity-70 uppercase font-bold tracking-widest text-eliga-cyan" x-text="match.awayName"></p>
-                        <p class="text-6xl font-black mt-1" x-text="match.scoreAway"></p>
+                    
+                    <div class="flex-1 cursor-pointer group text-center" @click="openScoreEdit('away')">
+                        <p class="text-[10px] uppercase font-bold tracking-widest text-[#00bce4] opacity-90 group-hover:text-white transition mb-1 truncate px-1" x-text="match.awayName"></p>
+                        <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreAway"></p>
                     </div>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-5">
+            <div class="flex-1 overflow-y-auto p-4 pt-6 space-y-5">
                 <div class="grid grid-cols-2 gap-3">
                     <template x-for="type in ['goal', 'penalty', 'yellow', 'red', 'corner', 'sub']">
                         <button @click="openEventModal(type)" class="py-4 px-2 rounded-2xl flex flex-col items-center space-y-2 text-white shadow-md transform active:scale-95 transition"
@@ -167,7 +167,8 @@
                         <h3 class="font-black text-gray-400 text-xs uppercase tracking-widest">Match Events</h3>
                         <span class="text-[10px] font-black text-eliga-blue bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md" x-text="match.events.length"></span>
                     </div>
-                    <template x-for="(ev, index) in match.events">
+                    
+                    <template x-for="(ev, index) in match.events" :key="ev.id">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
                             <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer hover:bg-gray-100 transition" @click="openTimeEditOnly(index)">
                                 <span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span>
@@ -177,7 +178,9 @@
                             </div>
                             <div class="flex-1 text-sm">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type"></div>
-                                <template x-if="ev.type !== 'sub'"><div class="font-black text-gray-800 text-xs" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></div></template>
+                                <template x-if="ev.type !== 'sub'">
+                                    <div class="font-black text-gray-800 text-xs" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></div>
+                                </template>
                                 <template x-if="ev.type === 'sub'">
                                     <div class="font-bold text-gray-800 flex items-center space-x-2 text-[10px] bg-gray-50 inline-flex px-2 py-1 rounded">
                                         <span class="text-red-500"><i class="fa-solid fa-arrow-down mr-1"></i><span x-text="'#'+ev.playerOut.num"></span></span>
@@ -195,7 +198,7 @@
             </div>
 
             <div class="p-4 border-t bg-white absolute bottom-0 w-full z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
-                <button @click="finishMatch()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg shadow-blue-900/20">Finish Match</button>
+                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
 
@@ -436,8 +439,6 @@
 
     </div>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <script>
         function matchApp() {
             return {
@@ -445,15 +446,8 @@
                 history: [],
                 hasActiveMatch: false,
                 currentReport: null,
-                setup: {
-                    activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [],
-                    playerStatus: 'starting', playerNum: '', playerName: ''
-                },
-                match: {
-                    homeName: '', awayName: '', scoreHome: 0, scoreAway: 0,
-                    homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, 
-                    lastTick: null, timerInterval: null
-                },
+                setup: { activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], playerStatus: 'starting', playerNum: '', playerName: '' },
+                match: { homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null },
                 modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
                 timeModal: { open: false, min: 0, sec: 0, editEventIndex: -1 },
                 scoreModal: { open: false, team: '', val: 0 },
@@ -463,13 +457,11 @@
                     this.history = JSON.parse(localStorage.getItem('matchHistory') || '[]');
                     this.hasActiveMatch = !!localStorage.getItem('activeMatch');
                 },
-                
                 saveState() {
                     let matchToSave = { ...this.match, timerInterval: null };
                     localStorage.setItem('activeMatch', JSON.stringify(matchToSave));
                     this.hasActiveMatch = true;
                 },
-
                 resumeMatch() {
                     let saved = JSON.parse(localStorage.getItem('activeMatch'));
                     if (saved) {
@@ -479,7 +471,6 @@
                             let now = Date.now();
                             let diff = Math.floor((now - this.match.lastTick) / 1000);
                             let newTimer = this.match.timer + diff;
-                            
                             if (this.match.timer < 2700 && newTimer >= 2700) {
                                 this.match.timer = 2700; this.match.isPaused = true;
                             } else if (this.match.timer < 5400 && newTimer >= 5400) {
@@ -492,7 +483,6 @@
                         }
                     }
                 },
-
                 addPlayerToSetup() {
                     if (!this.setup.playerNum) return;
                     const p = { id: Date.now(), num: this.setup.playerNum, name: this.setup.playerName, status: this.setup.playerStatus };
@@ -501,9 +491,7 @@
                     
                     let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
                     let startersCount = currentList.filter(x => x.status === 'starting').length;
-                    if (this.setup.playerStatus === 'starting' && startersCount >= 11) {
-                        this.setup.playerStatus = 'sub';
-                    }
+                    if (this.setup.playerStatus === 'starting' && startersCount >= 11) { this.setup.playerStatus = 'sub'; }
                     this.setup.playerNum = ''; this.setup.playerName = '';
                 },
                 removePlayerFromSetup(id) {
@@ -517,29 +505,34 @@
                     this.match.awayPlayers = JSON.parse(JSON.stringify(this.setup.awayPlayers));
                     this.match.scoreHome = 0; this.match.scoreAway = 0; this.match.events = []; 
                     this.match.timer = 0; this.match.isPaused = true; this.match.lastTick = null;
-                    this.view = 'live';
-                    this.saveState();
+                    this.view = 'live'; this.saveState();
                 },
 
+                // ტაიმერის გაძლიერებული (დაცული) მექანიზმი
                 startInterval() {
+                    if (this.match.timerInterval) clearInterval(this.match.timerInterval);
                     this.match.lastTick = Date.now();
                     this.match.timerInterval = setInterval(() => {
                         let now = Date.now();
                         let diff = Math.floor((now - this.match.lastTick) / 1000);
                         if (diff > 0) {
                             let newTimer = this.match.timer + diff;
+                            let autoPaused = false;
+                            
                             if (this.match.timer < 2700 && newTimer >= 2700) {
-                                this.match.timer = 2700;
-                                this.match.isPaused = true;
-                                clearInterval(this.match.timerInterval);
+                                newTimer = 2700; autoPaused = true;
                             } else if (this.match.timer < 5400 && newTimer >= 5400) {
-                                this.match.timer = 5400;
+                                newTimer = 5400; autoPaused = true;
+                            }
+                            
+                            this.match.timer = newTimer;
+                            this.match.lastTick = now - ((now - this.match.lastTick) % 1000);
+                            
+                            if (autoPaused) {
                                 this.match.isPaused = true;
                                 clearInterval(this.match.timerInterval);
-                            } else {
-                                this.match.timer = newTimer;
+                                this.match.timerInterval = null;
                             }
-                            this.match.lastTick = now - ((now - this.match.lastTick) % 1000);
                             this.saveState();
                         }
                     }, 1000);
@@ -550,29 +543,32 @@
                     if (!this.match.isPaused) {
                         this.startInterval();
                     } else { 
-                        clearInterval(this.match.timerInterval); 
+                        if (this.match.timerInterval) {
+                            clearInterval(this.match.timerInterval);
+                            this.match.timerInterval = null;
+                        }
                     }
                     this.saveState();
                 },
                 formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
                 openEventModal(type) { this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null; },
+                
+                // აქ დაემატა უნიკალური ID ყველა მოვლენას (id: Date.now() + Math.random()), რაც ციმციმს აქრობს!
                 recordStandardEvent(p) {
-                    this.match.events.unshift({ type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
+                    this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
                     if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
                         if (this.modal.team === 'home') this.match.scoreHome++; else this.match.scoreAway++;
                     }
-                    this.modal.open = false;
-                    this.saveState();
+                    this.modal.open = false; this.saveState();
                 },
                 recordSubstitution() {
                     const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
                     const pOut = list.find(x => x.id === this.modal.playerOut.id);
                     const pIn = list.find(x => x.id === this.modal.playerIn.id);
                     pOut.status = 'sub'; pIn.status = 'starting';
-                    this.match.events.unshift({ type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
-                    this.modal.open = false;
-                    this.saveState();
+                    this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
+                    this.modal.open = false; this.saveState();
                 },
 
                 openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor(this.match.timer / 60); this.timeModal.sec = this.match.timer % 60; this.timeModal.open = true; },
@@ -582,17 +578,18 @@
                 },
                 saveTimeEdit() {
                     let newTime = parseInt(this.timeModal.min) * 60 + parseInt(this.timeModal.sec);
-                    if (this.timeModal.editEventIndex === -1) { this.match.timer = newTime; } 
+                    if (this.timeModal.editEventIndex === -1) { 
+                        this.match.timer = newTime; 
+                        this.match.lastTick = Date.now(); // დროის ხელით შეცვლისას ნახტომების თავიდან აცილება
+                    } 
                     else { this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime); }
-                    this.timeModal.open = false;
-                    this.saveState();
+                    this.timeModal.open = false; this.saveState();
                 },
                 openScoreEdit(team) { this.scoreModal.team = team; this.scoreModal.val = team === 'home' ? this.match.scoreHome : this.match.scoreAway; this.scoreModal.open = true; },
                 saveScoreEdit() { 
                     if(this.scoreModal.team === 'home') this.match.scoreHome = parseInt(this.scoreModal.val); 
                     else this.match.scoreAway = parseInt(this.scoreModal.val); 
-                    this.scoreModal.open = false; 
-                    this.saveState();
+                    this.scoreModal.open = false; this.saveState();
                 },
                 openEventEdit(index) {
                     let ev = this.match.events[index]; this.editModal.index = index; this.editModal.type = ev.type; this.editModal.team = ev.team;
@@ -608,13 +605,12 @@
                         let p = list.find(x => x.num == this.editModal.playerNum);
                         if(p) { ev.playerNum = p.num; ev.playerName = p.name; }
                     }
-                    this.editModal.open = false;
-                    this.saveState();
+                    this.editModal.open = false; this.saveState();
                 },
 
                 finishMatch() {
                     if (!confirm('ნამდვილად გსურთ მატჩის დასრულება?')) return;
-                    clearInterval(this.match.timerInterval);
+                    if (this.match.timerInterval) clearInterval(this.match.timerInterval);
                     let dateStr = new Date().toLocaleString('ka-GE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
                     
                     this.history.unshift({ 
@@ -625,10 +621,8 @@
                         events: JSON.parse(JSON.stringify(this.match.events))
                     });
                     localStorage.setItem('matchHistory', JSON.stringify(this.history));
-                    
                     localStorage.removeItem('activeMatch');
-                    this.hasActiveMatch = false;
-                    this.view = 'history';
+                    this.hasActiveMatch = false; this.view = 'history';
                 },
                 
                 viewReport(index) {
@@ -639,8 +633,7 @@
                         if(e.type === 'red') stats[e.team].red++;
                         if(e.type === 'corner') stats[e.team].corner++;
                     });
-                    this.currentReport.stats = stats;
-                    this.view = 'report';
+                    this.currentReport.stats = stats; this.view = 'report';
                 },
                 
                 deleteReport(index) {
