@@ -21,11 +21,14 @@
         [x-cloak] { display: none !important; }
         .bg-magenta { background-color: #e6007e; }
         .text-magenta { color: #e6007e; }
+        .border-magenta { border-color: #e6007e; }
         .bg-eliga-blue { background-color: #2e3192; }
         .text-eliga-blue { color: #2e3192; }
         .bg-eliga-cyan { background-color: #00bce4; }
+        .text-eliga-cyan { color: #00bce4; }
         .shape-triangle-1 { clip-path: polygon(0 0, 100% 0, 0 100%); }
         .shape-triangle-2 { clip-path: polygon(100% 100%, 0% 100%, 100% 0); }
+        .shape-polygon { clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); }
         .pdf-container { background: white; padding: 20px; color: black; }
     </style>
 </head>
@@ -36,20 +39,23 @@
         <div x-show="view === 'home'" class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
             <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
+            <div class="absolute top-1/3 right-[-40px] w-32 h-32 bg-eliga-blue opacity-5 shape-polygon transform rotate-45"></div>
+            <div class="absolute bottom-1/3 left-[-20px] w-24 h-24 bg-magenta opacity-10 shape-triangle-2 transform -rotate-12"></div>
             
             <div class="relative z-10 space-y-4 w-full">
                 <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl transform rotate-3">
-                    <img src="logo.png" alt="Logo" class="w-20 h-20 object-contain transform -rotate-3">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain transform -rotate-3">
                 </div>
-                <h1 class="text-4xl font-black text-eliga-blue uppercase tracking-tighter leading-none">E-liga<br><span class="text-magenta">Match Management</span></h1>
+                <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
+                <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2">Match Management</p>
             </div>
             
             <div class="w-full space-y-4 relative z-10 mt-12">
                 <button x-show="hasActiveMatch" @click="resumeMatch()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg transform active:scale-95 transition flex justify-center items-center">
                     <i class="fa-solid fa-play mr-2"></i> გააგრძელე მატჩი
                 </button>
-                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl transform active:scale-95 transition tracking-wide">+ NEW MATCH</button>
-                <button @click="view = 'history'" class="w-full border-2 border-eliga-blue text-eliga-blue py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition">
+                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide">+ NEW MATCH</button>
+                <button @click="view = 'history'" class="w-full border-2 border-eliga-blue text-eliga-blue py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition hover:bg-blue-50">
                     <i class="fa-solid fa-clock-rotate-left mr-2"></i> HISTORY
                 </button>
             </div>
@@ -65,26 +71,26 @@
                 <div>
                     <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Team Names</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <input type="text" x-model="setup.homeName" placeholder="Home Team" autocomplete="off" class="w-full min-w-0 p-4 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-100 font-bold text-sm">
-                        <input type="text" x-model="setup.awayName" placeholder="Away Team" autocomplete="off" class="w-full min-w-0 p-4 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-100 font-bold text-sm">
+                        <input type="text" x-model="setup.homeName" placeholder="Home Team" autocomplete="off" class="w-full min-w-0 appearance-none p-4 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-100 font-bold text-sm">
+                        <input type="text" x-model="setup.awayName" placeholder="Away Team" autocomplete="off" class="w-full min-w-0 appearance-none p-4 bg-gray-50 rounded-xl focus:ring-2 ring-magenta outline-none border border-gray-100 font-bold text-sm">
                     </div>
                 </div>
 
                 <div class="flex p-1 bg-gray-100 rounded-xl shadow-inner">
-                    <button @click="setup.activeTab = 'home'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-sm uppercase truncate px-2" x-text="setup.homeName || 'Home'"></button>
-                    <button @click="setup.activeTab = 'away'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-sm uppercase truncate px-2" x-text="setup.awayName || 'Away'"></button>
+                    <button @click="setup.activeTab = 'home'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black transition text-sm uppercase truncate px-2" x-text="setup.homeName || 'Home'"></button>
+                    <button @click="setup.activeTab = 'away'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black transition text-sm uppercase truncate px-2" x-text="setup.awayName || 'Away'"></button>
                 </div>
 
                 <div class="bg-white p-5 rounded-2xl space-y-4 border shadow-sm">
                     <div class="grid grid-cols-2 gap-2">
-                        <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Starting XI</button>
-                        <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Substitute</button>
+                        <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase transition tracking-wider">Starting XI</button>
+                        <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase transition tracking-wider">Substitute</button>
                     </div>
                     <div class="flex gap-2">
-                        <input type="number" x-model="setup.playerNum" placeholder="No." autocomplete="off" class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta">
-                        <input type="text" x-model="setup.playerName" placeholder="Player Name" autocomplete="off" class="w-3/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta">
+                        <input type="number" x-model="setup.playerNum" placeholder="No." autocomplete="off" class="w-1/4 min-w-0 appearance-none p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta transition">
+                        <input type="text" x-model="setup.playerName" placeholder="Player Name" autocomplete="off" class="w-3/4 min-w-0 appearance-none p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta transition">
                     </div>
-                    <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90">+ Add Player</button>
+                    <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                 </div>
 
                 <div class="space-y-5">
@@ -96,42 +102,45 @@
                             </div>
                             <div class="space-y-1">
                                 <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                                    <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm hover:border-gray-200">
+                                    <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm hover:border-gray-200 transition">
                                         <div class="flex items-center">
                                             <strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong> 
-                                            <span class="text-gray-600 font-bold text-xs" x-text="p.name || ''"></span>
+                                            <span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || 'No name'"></span>
                                         </div>
-                                        <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                                        <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
                                     </div>
                                 </template>
                             </div>
                         </div>
                     </template>
                 </div>
-                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl uppercase mt-6 tracking-widest">Start Match</button>
+                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 mt-6 tracking-widest uppercase">Start Match</button>
             </div>
         </div>
 
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
-            <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
+            <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-[#00bce4] opacity-20 rounded-full blur-2xl transform -translate-x-1/3 translate-y-1/3"></div>
+                
                 <button @click="view = 'home'" class="absolute top-6 left-6 text-white/60 hover:text-white transition z-10"><i class="fa-solid fa-house text-xl"></i></button>
                 
                 <div class="flex items-center justify-between mt-6 relative z-10 space-x-2">
-                    <div class="flex-1 min-w-0 cursor-pointer text-center" @click="openScoreEdit('home')">
-                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md mb-1 truncate px-1" x-text="match.homeName"></p>
+                    <div class="flex-1 min-w-0 cursor-pointer group text-center" @click="openScoreEdit('home')">
+                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md transition mb-1 truncate px-1" x-text="match.homeName"></p>
                         <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreHome"></p>
                     </div>
                     <div class="px-2 flex flex-col items-center flex-shrink-0">
-                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg cursor-pointer hover:bg-black/30 transition" @click="openTimeEdit()">
-                            <p class="text-4xl font-black font-mono tracking-wider text-white drop-shadow-md" x-text="formatTime(match.timer)"></p>
+                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] cursor-pointer hover:bg-black/30 transition group" @click="openTimeEdit()">
+                            <p class="text-4xl font-black font-mono tracking-wider text-white group-hover:text-[#00bce4] transition drop-shadow-md" x-text="formatTime(match.timer)"></p>
                         </div>
                         <button @click="toggleTimer()" class="mt-5 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transform active:scale-95 transition"
                                 :class="match.isPaused ? 'bg-white text-[#2e3192]' : 'bg-magenta text-white'">
                             <i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i>
                         </button>
                     </div>
-                    <div class="flex-1 min-w-0 cursor-pointer text-center" @click="openScoreEdit('away')">
-                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md mb-1 truncate px-1" x-text="match.awayName"></p>
+                    <div class="flex-1 min-w-0 cursor-pointer group text-center" @click="openScoreEdit('away')">
+                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md transition mb-1 truncate px-1" x-text="match.awayName"></p>
                         <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreAway"></p>
                     </div>
                 </div>
@@ -156,7 +165,7 @@
                     
                     <template x-for="(ev, index) in match.events" :key="ev.id">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
-                            <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer hover:bg-gray-100" @click="openTimeEditOnly(index)">
+                            <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer hover:bg-gray-100 transition" @click="openTimeEditOnly(index)">
                                 <span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span>
                             </div>
                             
@@ -174,20 +183,20 @@
                             <div class="flex-1 text-sm min-w-0 pr-2">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type"></div>
                                 <template x-if="ev.type !== 'sub'">
-                                    <div class="font-black text-gray-800 text-xs truncate" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div>
+                                    <div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div>
                                 </template>
                                 
                                 <template x-if="ev.type === 'sub'">
                                     <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
-                                        <span class="text-red-500 flex items-center truncate"><i class="fa-solid fa-arrow-down mr-1.5 shrink-0"></i> <span class="truncate" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
-                                        <span class="text-green-500 flex items-center truncate"><i class="fa-solid fa-arrow-up mr-1.5 shrink-0"></i> <span class="truncate" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
+                                        <span class="text-red-500 flex items-start"><i class="fa-solid fa-arrow-down mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                        <span class="text-green-500 flex items-start"><i class="fa-solid fa-arrow-up mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
                                     </div>
                                 </template>
                             </div>
                             
                             <div class="flex flex-col space-y-1.5 ml-1 shrink-0">
-                                <button @click="openEventEdit(index)" class="text-eliga-blue w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) { match.events.splice(index, 1); saveState(); }" class="text-red-500 w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button @click="openEventEdit(index)" class="text-eliga-blue w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition shadow-sm"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) { match.events.splice(index, 1); saveState(); }" class="text-red-500 w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100 transition shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
                     </template>
@@ -195,22 +204,24 @@
             </div>
 
             <div class="p-4 border-t bg-white absolute bottom-0 w-full z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
-                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest">Finish Match</button>
+                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
-
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border">
-                <button @click="view = 'home'" class="p-2 text-gray-500 hover:text-magenta"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                <button @click="view = 'home'" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
                 <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider">History</h2>
-                <button @click="clearHistory()" class="text-red-500 text-[10px] font-black bg-red-50 px-3 py-2 rounded-lg uppercase">Clear</button>
+                <button @click="clearHistory()" class="text-red-500 text-[10px] font-black bg-red-50 px-3 py-2 rounded-lg tracking-widest uppercase">Clear</button>
             </div>
             
             <div class="flex-1 overflow-y-auto space-y-4">
                 <template x-for="(h, index) in history">
-                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative hover:border-magenta transition">
-                        <button @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                        <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
+                        <button @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 hover:text-red-600 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        
+                        <div class="border-b pb-2 pr-10">
+                            <span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span>
+                        </div>
                         <div class="flex justify-between items-center">
                             <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
                             <div class="text-[10px] font-black text-gray-300 bg-gray-50 px-3 py-1.5 rounded-lg border mx-2">VS</div>
@@ -225,9 +236,9 @@
 
         <div x-show="view === 'report'" x-cloak class="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
             <div class="p-4 pt-8 bg-white border-b flex items-center justify-between shadow-sm z-10">
-                <button @click="view = 'history'" class="p-2 text-gray-500 hover:text-magenta"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                <button @click="view = 'history'" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
                 <h2 class="text-lg font-black text-eliga-blue uppercase tracking-wider">Report</h2>
-                <button @click="downloadPDF()" class="text-white bg-magenta px-4 py-2 rounded-xl font-bold text-xs flex items-center shadow-md"><i class="fa-solid fa-download mr-2"></i> PDF</button>
+                <button @click="downloadPDF()" class="text-white bg-magenta px-4 py-2 rounded-xl font-bold text-xs flex items-center shadow-md transform active:scale-95 transition"><i class="fa-solid fa-download mr-2"></i> PDF</button>
             </div>
             
             <div class="flex-1 overflow-y-auto p-4">
@@ -238,23 +249,23 @@
                     </div>
 
                     <div class="flex justify-between items-center bg-gray-50 border p-4 rounded-2xl mb-6">
-                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 truncate" x-text="currentReport?.homeName"></p><p class="text-4xl font-black text-magenta" x-text="currentReport?.scoreHome"></p></div>
+                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.homeName"></p><p class="text-4xl font-black text-magenta" x-text="currentReport?.scoreHome"></p></div>
                         <div class="text-sm font-black text-gray-300 mx-2">VS</div>
-                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 truncate" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
+                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
                     </div>
 
                     <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
                         <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
-                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 truncate" x-text="currentReport?.homeName + ' GOALS'"></h4>
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.homeName + ' GOALS'"></h4>
                             <template x-for="g in currentReport?.stats?.home?.goals">
-                                <p class="text-[11px] font-bold text-gray-700 flex items-center truncate"><i class="fa-solid fa-futbol text-magenta mr-2 text-[10px] shrink-0"></i> <span class="truncate" x-text="g.time + ' - ' + g.player"></span></p>
+                                <p class="text-[11px] font-bold text-gray-700 flex items-start leading-tight mb-1"><i class="fa-solid fa-futbol text-magenta mr-2 mt-0.5 text-[10px] shrink-0"></i> <span class="break-words whitespace-normal" x-text="g.time + ' - ' + g.player"></span></p>
                             </template>
                             <div x-show="!currentReport?.stats?.home?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
                         </div>
                         <div class="w-1/2 pl-3 text-right space-y-2">
-                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 truncate" x-text="currentReport?.awayName + ' GOALS'"></h4>
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.awayName + ' GOALS'"></h4>
                             <template x-for="g in currentReport?.stats?.away?.goals">
-                                <p class="text-[11px] font-bold text-gray-700 flex items-center justify-end truncate"><span class="truncate" x-text="g.time + ' - ' + g.player"></span> <i class="fa-solid fa-futbol text-eliga-blue ml-2 text-[10px] shrink-0"></i></p>
+                                <p class="text-[11px] font-bold text-gray-700 flex items-start justify-end leading-tight mb-1"><span class="break-words whitespace-normal text-right" x-text="g.time + ' - ' + g.player"></span> <i class="fa-solid fa-futbol text-eliga-blue ml-2 mt-0.5 text-[10px] shrink-0"></i></p>
                             </template>
                             <div x-show="!currentReport?.stats?.away?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
                         </div>
@@ -264,7 +275,7 @@
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Statistics</h3>
                         <table class="w-full text-sm">
                             <tr class="text-gray-400 font-bold text-[9px] uppercase border-b bg-gray-50">
-                                <td class="py-2 px-2 w-1/3 rounded-l-lg truncate" x-text="currentReport?.homeName"></td><td class="text-center w-1/3">Stat</td><td class="text-right w-1/3 px-2 rounded-r-lg truncate" x-text="currentReport?.awayName"></td>
+                                <td class="py-2 px-2 w-1/3 rounded-l-lg break-words whitespace-normal" x-text="currentReport?.homeName"></td><td class="text-center w-1/3">Stat</td><td class="text-right w-1/3 px-2 rounded-r-lg break-words whitespace-normal" x-text="currentReport?.awayName"></td>
                             </tr>
                             <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.yellow || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Yellow Cards</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.yellow || 0"></td></tr>
                             <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.red || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Red Cards</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.red || 0"></td></tr>
@@ -276,15 +287,20 @@
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Match Events</h3>
                         <div class="space-y-1 bg-gray-50 rounded-xl p-2 border">
                             <template x-for="ev in currentReport?.events">
-                                <div class="flex items-center text-[11px] border-b border-white py-1.5 px-1 last:border-0">
-                                    <span class="font-mono font-black text-gray-400 w-10" x-text="ev.time"></span>
-                                    <span class="font-bold text-gray-600 w-20 truncate uppercase text-[9px]" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
-                                    <span class="uppercase font-black w-16 text-[9px]" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type"></span>
+                                <div class="flex items-center text-[11px] border-b border-white py-2 px-1 last:border-0">
+                                    <span class="font-mono font-black text-gray-400 w-10 shrink-0" x-text="ev.time"></span>
+                                    <span class="font-bold text-gray-600 w-16 break-words whitespace-normal uppercase text-[9px] shrink-0" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
+                                    <span class="uppercase font-black w-14 text-[9px] shrink-0" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type"></span>
+                                    
                                     <template x-if="ev.type !== 'sub'">
-                                        <span class="font-bold text-gray-800 ml-1 truncate" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span>
+                                        <span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span>
                                     </template>
+                                    
                                     <template x-if="ev.type === 'sub'">
-                                        <span class="text-gray-500 font-medium ml-1 truncate">Out: <strong class="text-red-400">#<span x-text="ev.playerOut.num"></span></strong> / In: <strong class="text-green-500">#<span x-text="ev.playerIn.num"></span></strong></span>
+                                        <div class="flex flex-col space-y-1 ml-1 w-full">
+                                            <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">Out: <strong x-text="'#'+ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></strong></span></span>
+                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">In: <strong x-text="'#'+ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></strong></span></span>
+                                        </div>
                                     </template>
                                 </div>
                             </template>
@@ -296,39 +312,39 @@
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Lineups</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-gray-50 p-3 rounded-xl border">
-                                <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase truncate text-center tracking-widest" x-text="currentReport?.homeName"></h4>
+                                <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.homeName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
                                     <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                                        <div class="flex py-0.5 items-center justify-between">
-                                            <div class="flex items-center min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 truncate" x-text="p.name"></span></div>
-                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] shrink-0"></i></template>
+                                        <div class="flex py-1 items-start justify-between">
+                                            <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
                                     <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                                        <div class="flex py-0.5 items-center justify-between text-gray-500">
-                                            <div class="flex items-center min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium truncate" x-text="p.name"></span></div>
-                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] shrink-0"></i></template>
+                                        <div class="flex py-1 items-start justify-between text-gray-500">
+                                            <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                 </div>
                             </div>
                             <div class="bg-gray-50 p-3 rounded-xl border">
-                                <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase truncate text-center tracking-widest" x-text="currentReport?.awayName"></h4>
+                                <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.awayName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
                                     <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                                        <div class="flex py-0.5 items-center justify-between">
-                                            <div class="flex items-center min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 truncate" x-text="p.name"></span></div>
-                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] shrink-0"></i></template>
+                                        <div class="flex py-1 items-start justify-between">
+                                            <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
                                     <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                                        <div class="flex py-0.5 items-center justify-between text-gray-500">
-                                            <div class="flex items-center min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium truncate" x-text="p.name"></span></div>
-                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] shrink-0"></i></template>
+                                        <div class="flex py-1 items-start justify-between text-gray-500">
+                                            <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                 </div>
@@ -463,7 +479,6 @@
     </div>
 
     <script>
-        // Firebase Configuration (შენი კონფიგი)
         const firebaseConfig = {
             apiKey: "AIzaSyArZaTt57Z0nAgPsMnv0Bp7aE4YSuUxYWc",
             authDomain: "e-liga.firebaseapp.com",
