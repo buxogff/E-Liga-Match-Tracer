@@ -12,9 +12,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         [x-cloak] { display: none !important; }
-        
         .bg-magenta { background-color: #e6007e; }
         .text-magenta { color: #e6007e; }
         .border-magenta { border-color: #e6007e; }
@@ -26,7 +27,6 @@
         .shape-triangle-1 { clip-path: polygon(0 0, 100% 0, 0 100%); }
         .shape-triangle-2 { clip-path: polygon(100% 100%, 0% 100%, 100% 0); }
         .shape-polygon { clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); }
-
         .pdf-container { background: white; padding: 20px; color: black; }
     </style>
 </head>
@@ -44,7 +44,6 @@
                 <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl transform rotate-3">
                     <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain transform -rotate-3">
                 </div>
-                
                 <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
                 <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2">Match Management</p>
             </div>
@@ -101,10 +100,9 @@
                             </div>
                             
                             <div class="space-y-1">
-                                <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status)">
+                                <template x-for="(p, index) in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                     <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm hover:border-gray-200 transition">
                                         <div class="flex items-center">
-                                            <span class="text-[10px] text-gray-300 font-black w-5 text-right mr-2" x-text="(index + 1) + '.'"></span>
                                             <strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong> 
                                             <span class="text-gray-600 font-bold text-xs" x-text="p.name || 'No name'"></span>
                                         </div>
@@ -120,9 +118,7 @@
         </div>
 
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
-            
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
-                
                 <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
                 <div class="absolute bottom-0 left-0 w-48 h-48 bg-[#00bce4] opacity-20 rounded-full blur-2xl transform -translate-x-1/3 translate-y-1/3"></div>
                 
@@ -133,7 +129,6 @@
                         <p class="text-[10px] uppercase font-bold tracking-widest text-[#00bce4] opacity-90 group-hover:text-white transition mb-1 truncate px-1" x-text="match.homeName"></p>
                         <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreHome"></p>
                     </div>
-                    
                     <div class="px-2 flex flex-col items-center">
                         <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] cursor-pointer hover:bg-black/30 transition group" @click="openTimeEdit()">
                             <p class="text-4xl font-black font-mono tracking-wider text-white group-hover:text-[#00bce4] transition drop-shadow-md" x-text="formatTime(match.timer)"></p>
@@ -143,7 +138,6 @@
                             <i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i>
                         </button>
                     </div>
-                    
                     <div class="flex-1 cursor-pointer group text-center" @click="openScoreEdit('away')">
                         <p class="text-[10px] uppercase font-bold tracking-widest text-[#00bce4] opacity-90 group-hover:text-white transition mb-1 truncate px-1" x-text="match.awayName"></p>
                         <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreAway"></p>
@@ -173,24 +167,35 @@
                             <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer hover:bg-gray-100 transition" @click="openTimeEditOnly(index)">
                                 <span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span>
                             </div>
+                            
                             <div class="w-8 flex justify-center mr-2">
-                                <i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400 shadow-sm': ev.type === 'yellow', 'fa-square text-red-500 shadow-sm': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i>
+                                <i class="fa-solid text-xl drop-shadow-sm" :class="{
+                                    'fa-futbol text-green-500': ev.type === 'goal', 
+                                    'fa-bullseye text-emerald-600': ev.type === 'penalty', 
+                                    'fa-square text-yellow-400': ev.type === 'yellow', 
+                                    'fa-square text-red-500': ev.type === 'red', 
+                                    'fa-flag text-eliga-cyan': ev.type === 'corner', 
+                                    'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'
+                                }"></i>
                             </div>
+                            
                             <div class="flex-1 text-sm">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type"></div>
                                 <template x-if="ev.type !== 'sub'">
-                                    <div class="font-black text-gray-800 text-xs" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></div>
+                                    <div class="font-black text-gray-800 text-xs" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div>
                                 </template>
+                                
                                 <template x-if="ev.type === 'sub'">
-                                    <div class="font-bold text-gray-800 flex items-center space-x-2 text-[10px] bg-gray-50 inline-flex px-2 py-1 rounded">
-                                        <span class="text-red-500"><i class="fa-solid fa-arrow-down mr-1"></i><span x-text="'#'+ev.playerOut.num"></span></span>
-                                        <span class="text-green-500"><i class="fa-solid fa-arrow-up mr-1 ml-2"></i><span x-text="'#'+ev.playerIn.num"></span></span>
+                                    <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
+                                        <span class="text-red-500 flex items-center"><i class="fa-solid fa-arrow-down mr-1.5"></i> <span x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                        <span class="text-green-500 flex items-center"><i class="fa-solid fa-arrow-up mr-1.5"></i> <span x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
                                     </div>
                                 </template>
                             </div>
-                            <div class="flex flex-col space-y-1 ml-2">
-                                <button @click="openEventEdit(index)" class="text-eliga-blue w-7 h-7 rounded-md bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) { match.events.splice(index, 1); saveState(); }" class="text-red-500 w-7 h-7 rounded-md bg-red-50 flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            
+                            <div class="flex flex-col space-y-1.5 ml-2">
+                                <button @click="openEventEdit(index)" class="text-eliga-blue w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100 transition shadow-sm"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) { match.events.splice(index, 1); saveState(); }" class="text-red-500 w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100 transition shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
                     </template>
@@ -201,7 +206,6 @@
                 <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
-
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border">
                 <button @click="view = 'home'" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -249,6 +253,23 @@
                         <div class="text-center flex-1"><p class="text-[10px] font-black uppercase text-gray-500 mb-1" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
                     </div>
 
+                    <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
+                        <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3" x-text="currentReport?.homeName + ' GOALS'"></h4>
+                            <template x-for="g in currentReport?.stats?.home?.goals">
+                                <p class="text-[11px] font-bold text-gray-700 flex items-center"><i class="fa-solid fa-futbol text-magenta mr-2 text-[10px]"></i> <span x-text="g.time + ' - ' + g.player"></span></p>
+                            </template>
+                            <div x-show="!currentReport?.stats?.home?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
+                        </div>
+                        <div class="w-1/2 pl-3 text-right space-y-2">
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3" x-text="currentReport?.awayName + ' GOALS'"></h4>
+                            <template x-for="g in currentReport?.stats?.away?.goals">
+                                <p class="text-[11px] font-bold text-gray-700 flex items-center justify-end"><span x-text="g.time + ' - ' + g.player"></span> <i class="fa-solid fa-futbol text-eliga-blue ml-2 text-[10px]"></i></p>
+                            </template>
+                            <div x-show="!currentReport?.stats?.away?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
+                        </div>
+                    </div>
+
                     <div class="mb-6">
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Statistics</h3>
                         <table class="w-full text-sm">
@@ -270,7 +291,7 @@
                                     <span class="font-bold text-gray-600 w-20 truncate uppercase text-[9px]" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
                                     <span class="uppercase font-black w-16 text-[9px]" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type"></span>
                                     <template x-if="ev.type !== 'sub'">
-                                        <span class="font-bold text-gray-800 ml-1" x-text="'#' + ev.playerNum + ' ' + (ev.playerName || '')"></span>
+                                        <span class="font-bold text-gray-800 ml-1" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span>
                                     </template>
                                     <template x-if="ev.type === 'sub'">
                                         <span class="text-gray-500 font-medium ml-1">Out: <strong class="text-red-400">#<span x-text="ev.playerOut.num"></span></strong> / In: <strong class="text-green-500">#<span x-text="ev.playerIn.num"></span></strong></span>
@@ -288,12 +309,18 @@
                                 <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase truncate text-center tracking-widest" x-text="currentReport?.homeName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'starting')">
-                                        <div class="flex py-0.5"><span class="font-black w-5 text-gray-400" x-text="'#'+p.num"></span><span class="font-bold text-gray-700" x-text="p.name"></span></div>
+                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                        <div class="flex py-0.5 items-center justify-between">
+                                            <div class="flex items-center"><span class="font-black w-5 text-gray-400" x-text="'#'+p.num"></span><span class="font-bold text-gray-700" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px]"></i></template>
+                                        </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'sub')">
-                                        <div class="flex py-0.5 text-gray-500"><span class="font-black w-5 text-gray-300" x-text="'#'+p.num"></span><span class="font-medium" x-text="p.name"></span></div>
+                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                        <div class="flex py-0.5 items-center justify-between text-gray-500">
+                                            <div class="flex items-center"><span class="font-black w-5 text-gray-300" x-text="'#'+p.num"></span><span class="font-medium" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px]"></i></template>
+                                        </div>
                                     </template>
                                 </div>
                             </div>
@@ -301,12 +328,18 @@
                                 <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase truncate text-center tracking-widest" x-text="currentReport?.awayName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'starting')">
-                                        <div class="flex py-0.5"><span class="font-black w-5 text-gray-400" x-text="'#'+p.num"></span><span class="font-bold text-gray-700" x-text="p.name"></span></div>
+                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                        <div class="flex py-0.5 items-center justify-between">
+                                            <div class="flex items-center"><span class="font-black w-5 text-gray-400" x-text="'#'+p.num"></span><span class="font-bold text-gray-700" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px]"></i></template>
+                                        </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'sub')">
-                                        <div class="flex py-0.5 text-gray-500"><span class="font-black w-5 text-gray-300" x-text="'#'+p.num"></span><span class="font-medium" x-text="p.name"></span></div>
+                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                        <div class="flex py-0.5 items-center justify-between text-gray-500">
+                                            <div class="flex items-center"><span class="font-black w-5 text-gray-300" x-text="'#'+p.num"></span><span class="font-medium" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px]"></i></template>
+                                        </div>
                                     </template>
                                 </div>
                             </div>
@@ -333,16 +366,16 @@
                         <div class="space-y-2">
                             <p class="text-[9px] font-black text-red-500 uppercase bg-red-50 py-1 px-2 rounded-md inline-block border border-red-100 tracking-widest">Out (Field)</p>
                             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
-                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting')">
-                                    <button @click="modal.playerOut = p" :class="modal.playerOut?.id === p.id ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-white border-gray-200 text-gray-600'" class="p-3 border rounded-xl text-xs font-bold transition" x-text="'#'+p.num + ' ' + p.name"></button>
+                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                    <button @click="modal.playerOut = p" :class="modal.playerOut?.id === p.id ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-white border-gray-200 text-gray-600'" class="p-3 border rounded-xl text-xs font-bold transition" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
                                 </template>
                             </div>
                         </div>
                         <div class="space-y-2 border-t pt-3">
                             <p class="text-[9px] font-black text-green-600 uppercase bg-green-50 py-1 px-2 rounded-md inline-block border border-green-100 tracking-widest">In (Bench)</p>
                             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
-                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'sub')">
-                                    <button @click="modal.playerIn = p" :class="modal.playerIn?.id === p.id ? 'bg-green-500 text-white shadow-md border-green-600' : 'bg-white border-gray-200 text-gray-600'" class="p-3 border rounded-xl text-xs font-bold transition" x-text="'#'+p.num + ' ' + p.name"></button>
+                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                    <button @click="modal.playerIn = p" :class="modal.playerIn?.id === p.id ? 'bg-green-500 text-white shadow-md border-green-600' : 'bg-white border-gray-200 text-gray-600'" class="p-3 border rounded-xl text-xs font-bold transition" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
                                 </template>
                             </div>
                         </div>
@@ -352,8 +385,8 @@
 
                 <template x-if="modal.type !== 'sub'">
                     <div class="max-h-64 overflow-y-auto grid grid-cols-2 gap-2 p-1 pt-2">
-                        <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting')">
-                            <button @click="recordStandardEvent(p)" class="p-4 border border-gray-200 rounded-xl text-xs font-black text-left bg-white text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95 transition shadow-sm" x-text="'#'+p.num + ' ' + p.name"></button>
+                        <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                            <button @click="recordStandardEvent(p)" class="p-4 border border-gray-200 rounded-xl text-xs font-black text-left bg-white text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95 transition shadow-sm" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
                         </template>
                     </div>
                 </template>
@@ -425,7 +458,7 @@
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">მოთამაშე</label>
                         <select x-model="editModal.playerNum" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-800 appearance-none">
                             <template x-for="p in (editModal.team === 'home' ? match.homePlayers : match.awayPlayers)">
-                                <option :value="p.num" x-text="'#' + p.num + ' ' + (p.name || '')"></option>
+                                <option :value="p.num" x-text="'#' + p.num + (p.name ? ' ' + p.name : '')"></option>
                             </template>
                         </select>
                     </div>
@@ -508,7 +541,6 @@
                     this.view = 'live'; this.saveState();
                 },
 
-                // ტაიმერის გაძლიერებული (დაცული) მექანიზმი
                 startInterval() {
                     if (this.match.timerInterval) clearInterval(this.match.timerInterval);
                     this.match.lastTick = Date.now();
@@ -518,21 +550,11 @@
                         if (diff > 0) {
                             let newTimer = this.match.timer + diff;
                             let autoPaused = false;
-                            
-                            if (this.match.timer < 2700 && newTimer >= 2700) {
-                                newTimer = 2700; autoPaused = true;
-                            } else if (this.match.timer < 5400 && newTimer >= 5400) {
-                                newTimer = 5400; autoPaused = true;
-                            }
-                            
+                            if (this.match.timer < 2700 && newTimer >= 2700) { newTimer = 2700; autoPaused = true; } 
+                            else if (this.match.timer < 5400 && newTimer >= 5400) { newTimer = 5400; autoPaused = true; }
                             this.match.timer = newTimer;
                             this.match.lastTick = now - ((now - this.match.lastTick) % 1000);
-                            
-                            if (autoPaused) {
-                                this.match.isPaused = true;
-                                clearInterval(this.match.timerInterval);
-                                this.match.timerInterval = null;
-                            }
+                            if (autoPaused) { this.match.isPaused = true; clearInterval(this.match.timerInterval); this.match.timerInterval = null; }
                             this.saveState();
                         }
                     }, 1000);
@@ -540,21 +562,14 @@
 
                 toggleTimer() {
                     this.match.isPaused = !this.match.isPaused;
-                    if (!this.match.isPaused) {
-                        this.startInterval();
-                    } else { 
-                        if (this.match.timerInterval) {
-                            clearInterval(this.match.timerInterval);
-                            this.match.timerInterval = null;
-                        }
-                    }
+                    if (!this.match.isPaused) { this.startInterval(); } 
+                    else { if (this.match.timerInterval) { clearInterval(this.match.timerInterval); this.match.timerInterval = null; } }
                     this.saveState();
                 },
                 formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
                 openEventModal(type) { this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null; },
                 
-                // აქ დაემატა უნიკალური ID ყველა მოვლენას (id: Date.now() + Math.random()), რაც ციმციმს აქრობს!
                 recordStandardEvent(p) {
                     this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
                     if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
@@ -578,10 +593,7 @@
                 },
                 saveTimeEdit() {
                     let newTime = parseInt(this.timeModal.min) * 60 + parseInt(this.timeModal.sec);
-                    if (this.timeModal.editEventIndex === -1) { 
-                        this.match.timer = newTime; 
-                        this.match.lastTick = Date.now(); // დროის ხელით შეცვლისას ნახტომების თავიდან აცილება
-                    } 
+                    if (this.timeModal.editEventIndex === -1) { this.match.timer = newTime; this.match.lastTick = Date.now(); } 
                     else { this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime); }
                     this.timeModal.open = false; this.saveState();
                 },
@@ -627,13 +639,20 @@
                 
                 viewReport(index) {
                     this.currentReport = this.history[index];
-                    let stats = { home: { yellow:0, red:0, corner:0 }, away: { yellow:0, red:0, corner:0 } };
+                    let stats = { home: { yellow:0, red:0, corner:0, goals:[] }, away: { yellow:0, red:0, corner:0, goals:[] } };
+                    
+                    // გოლების და სტატისტიკის დათვლა
                     this.currentReport.events.forEach(e => {
                         if(e.type === 'yellow') stats[e.team].yellow++;
                         if(e.type === 'red') stats[e.team].red++;
                         if(e.type === 'corner') stats[e.team].corner++;
+                        if(e.type === 'goal' || e.type === 'penalty') {
+                            stats[e.team].goals.push({ num: e.playerNum, player: '#' + e.playerNum + (e.playerName ? ' ' + e.playerName : ''), time: e.time });
+                        }
                     });
-                    this.currentReport.stats = stats; this.view = 'report';
+                    
+                    this.currentReport.stats = stats;
+                    this.view = 'report';
                 },
                 
                 deleteReport(index) {
