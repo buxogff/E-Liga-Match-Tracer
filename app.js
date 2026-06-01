@@ -13,10 +13,10 @@ const db = firebase.firestore();
 
 function matchApp() {
     return {
-        view: 'landing', // აპი იწყება მთავარი 3-ოფციიანი გვერდით
+        view: 'landing', 
         role: localStorage.getItem('userRole') || null,
         
-        loginType: '', // ინახავს მენეჯერი აირჩია თუ მსაჯი
+        loginType: '', 
         loginUsername: '',
         loginPassword: '',
         
@@ -37,7 +37,6 @@ function matchApp() {
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
 
         init() {
-            // თუ როლი უკვე შენახულია ბრაუზერში, პირდაპირ შესაბამის გვერდზე გადაიყვანოს
             if (this.role === 'manager') this.view = 'home';
             else if (this.role === 'referee') this.view = 'referee_home';
             else if (this.role === 'guest') this.view = 'history';
@@ -45,13 +44,11 @@ function matchApp() {
 
             this.hasActiveMatch = !!localStorage.getItem('activeMatch');
             
-            // ისტორიის წამოღება
             db.collection("matches").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 this.history = [];
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
             });
 
-            // მიმდინარე ლაივ მატჩების მოსმენა
             db.collection("live_matches").onSnapshot((snapshot) => {
                 this.liveMatches = [];
                 snapshot.forEach((doc) => {
@@ -68,7 +65,6 @@ function matchApp() {
                 }
             });
 
-            // სინქრონული წამზომი სტუმრებისთვის
             setInterval(() => {
                 this.liveMatches.forEach(m => {
                     if (!m.isPaused && m.lastTick) {
@@ -81,6 +77,60 @@ function matchApp() {
                     } else { m.displayTimer = m.timer; }
                 });
             }, 1000);
+
+            // ==========================================
+            // ჟესტების მართვა (Swipe Back & Pull to Refresh)
+            // ==========================================
+            let startX = 0, startY = 0;
+            window.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+            
+            window.addEventListener('touchend', (e) => {
+                let endX = e.changedTouches[0].clientX;
+                let endY = e.changedTouches[0].clientY;
+                let diffX = endX - startX;
+                let diffY = endY - startY;
+                
+                // Swipe Back (მარჯვნივ გაწევა ეკრანის მარცხენა კიდიდან)
+                if (diffX > 80 && Math.abs(diffY) < 60 && startX < 50) {
+                    this.goBack();
+                }
+                
+                // Pull to Refresh (ქვემოთ ჩამოწევა ეკრანის ზედა ნაწილიდან)
+                let scrollContainers = document.querySelectorAll('.overflow-y-auto');
+                let isAtTop = true;
+                scrollContainers.forEach(el => {
+                    if (el.contains(e.target) && el.scrollTop > 0) isAtTop = false;
+                });
+                
+                if (diffY > 150 && Math.abs(diffX) < 60 && isAtTop && startY < 150) {
+                    if (confirm('გსურთ გვერდის განახლება (Refresh)?')) {
+                        window.location.reload();
+                    }
+                }
+            }, { passive: true });
+        },
+
+        // ჭკვიანი უკან დაბრუნების ფუნქცია
+        goBack() {
+            // თუ რომელიმე მოდალური ფანჯარაა ღია, ჯერ მას ხურავს
+            if (this.modal.open) { this.modal.open = false; return; }
+            if (this.timeModal.open) { this.timeModal.open = false; return; }
+            if (this.scoreModal.open) { this.scoreModal.open = false; return; }
+            if (this.editModal.open) { this.editModal.open = false; return; }
+
+            // ეკრანების მიხედვით უკან დაბრუნება
+            if (this.view === 'setup') this.view = 'home';
+            else if (this.view === 'history') {
+                if (this.role === 'guest') this.logout();
+                else this.view = 'home';
+            }
+            else if (this.view === 'report') this.view = 'history';
+            else if (this.view === 'guest_live') this.view = 'history';
+            else if (this.view === 'login') this.view = 'landing';
+            else if (this.view === 'live') this.view = 'home'; 
         },
 
         submitLogin() {
@@ -112,7 +162,7 @@ function matchApp() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
             this.role = null;
             localStorage.removeItem('userRole');
-            this.view = 'landing'; // გამოსვლისას აბრუნებს საწყის სამ-ოფციიან გვერდზე
+            this.view = 'landing'; 
         },
 
         watchLiveMatch(liveMatchId) {
