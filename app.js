@@ -78,7 +78,7 @@ function matchApp() {
                 });
             }, 1000);
 
-            // Swipe ლოგიკა
+            // Swipe Logic
             let startX = 0, startY = 0;
             window.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -131,31 +131,22 @@ function matchApp() {
             let p = this.loginPassword.trim();
 
             if (u === 'manager' && p === 'eliga2026') {
-                this.role = 'manager';
-                localStorage.setItem('userRole', 'manager');
-                this.view = 'home';
+                this.role = 'manager'; localStorage.setItem('userRole', 'manager'); this.view = 'home';
             } else if (u === 'referee' && p === 'referee2026') {
-                this.role = 'referee';
-                localStorage.setItem('userRole', 'referee');
-                this.view = 'referee_home';
+                this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home';
             } else {
                 alert("არასწორი მომხმარებელი ან პაროლი!");
             }
-            this.loginUsername = '';
-            this.loginPassword = '';
+            this.loginUsername = ''; this.loginPassword = '';
         },
 
         loginAsGuest() {
-            this.role = 'guest';
-            localStorage.setItem('userRole', 'guest');
-            this.view = 'history';
+            this.role = 'guest'; localStorage.setItem('userRole', 'guest'); this.view = 'history';
         },
 
         logout() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
-            this.role = null;
-            localStorage.removeItem('userRole');
-            this.view = 'landing'; 
+            this.role = null; localStorage.removeItem('userRole'); this.view = 'landing'; 
         },
 
         watchLiveMatch(liveMatchId) {
@@ -192,44 +183,21 @@ function matchApp() {
             }
         },
 
-        // =====================================
-        // დაცული და 100% მუშა მოთამაშის დამატება
-        // =====================================
         addPlayerToSetup() {
-            if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') {
-                return; 
-            }
-            
-            const newPlayer = { 
-                id: Date.now(), 
-                num: this.setup.playerNum.toString(), 
-                name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', 
-                status: this.setup.playerStatus 
-            };
-            
-            if (this.setup.activeTab === 'home') {
-                this.setup.homePlayers = [...this.setup.homePlayers, newPlayer];
-            } else {
-                this.setup.awayPlayers = [...this.setup.awayPlayers, newPlayer];
-            }
+            if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') return; 
+            const newPlayer = { id: Date.now(), num: this.setup.playerNum.toString(), name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', status: this.setup.playerStatus };
+            if (this.setup.activeTab === 'home') this.setup.homePlayers = [...this.setup.homePlayers, newPlayer];
+            else this.setup.awayPlayers = [...this.setup.awayPlayers, newPlayer];
             
             let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
             let startersCount = currentList.filter(x => x.status === 'starting').length;
-            
-            if (this.setup.playerStatus === 'starting' && startersCount >= 11) { 
-                this.setup.playerStatus = 'sub'; 
-            }
-            
-            this.setup.playerNum = ''; 
-            this.setup.playerName = '';
+            if (this.setup.playerStatus === 'starting' && startersCount >= 11) { this.setup.playerStatus = 'sub'; }
+            this.setup.playerNum = ''; this.setup.playerName = '';
         },
 
         removePlayerFromSetup(id) {
-            if (this.setup.activeTab === 'home') {
-                this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
-            } else {
-                this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
-            }
+            if (this.setup.activeTab === 'home') this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
+            else this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
         },
 
         startMatch() {
@@ -270,22 +238,51 @@ function matchApp() {
             this.saveState();
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
+
+        // ამოწმებს მოთამაშის სტატუსს (წითელი აქვს თუ შეცვლილია)
+        getPlayerState(teamStr, num) {
+            if (!this.match.events) return 'active';
+            let hasRed = this.match.events.some(e => e.team === teamStr && e.type === 'red' && e.playerNum == num);
+            if (hasRed) return 'red_carded';
+            let isSubbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == num);
+            if (isSubbedOut) return 'subbed_out';
+            return 'active';
+        },
+
         openEventModal(type) { this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null; },
+        
         recordStandardEvent(p) {
+            // ავტომატური წითელი ბარათის შემოწმება
+            if (this.modal.type === 'yellow') {
+                let hasYellow = this.match.events.some(e => e.type === 'yellow' && e.team === this.modal.team && e.playerNum === p.num);
+                if (hasYellow) {
+                    alert('ამ მოთამაშეს უკვე აქვს 1 ყვითელი ბარათი. ავტომატურად ეძლევა წითელი ბარათი!');
+                    this.modal.type = 'red';
+                }
+            }
+
             this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
+            
+            // ანგარიშის განახლება
             if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
                 if (this.modal.team === 'home') this.match.scoreHome++; else this.match.scoreAway++;
+            } else if (this.modal.type === 'own_goal') {
+                // ავტოგოლის დროს მოწინააღმდეგეს ემატება გოლი
+                if (this.modal.team === 'home') this.match.scoreAway++; else this.match.scoreHome++;
             }
+            
             this.modal.open = false; this.saveState();
         },
+
         recordSubstitution() {
             const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             const pOut = list.find(x => x.id === this.modal.playerOut.id);
             const pIn = list.find(x => x.id === this.modal.playerIn.id);
-            pOut.status = 'sub'; pIn.status = 'starting';
+            // სტატუსებს აღარ ვცვლით მასივში, getPlayerState თავად აკონტროლებს ივენთებიდან
             this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
             this.modal.open = false; this.saveState();
         },
+        
         openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor(this.match.timer / 60); this.timeModal.sec = this.match.timer % 60; this.timeModal.open = true; },
         openTimeEditOnly(index) {
             let ev = this.match.events[index]; let tParts = ev.time.split(':');
@@ -334,24 +331,29 @@ function matchApp() {
             db.collection("matches").add(reportData).then(() => {
                 if (this.matchId) {
                     db.collection("live_matches").doc(this.matchId).delete().then(() => {
-                        localStorage.removeItem('activeMatch'); 
-                        localStorage.removeItem('activeMatchId');
-                        this.matchId = null;
-                        this.hasActiveMatch = false; 
-                        this.view = 'history';
+                        localStorage.removeItem('activeMatch'); localStorage.removeItem('activeMatchId');
+                        this.matchId = null; this.hasActiveMatch = false; this.view = 'history';
                     });
                 }
             }).catch(() => { alert("შეცდომა! შეამოწმეთ ინტერნეტი."); });
         },
         viewReport(index) {
             this.currentReport = this.history[index];
-            let stats = { home: { yellow:0, red:0, corner:0, goals:[] }, away: { yellow:0, red:0, corner:0, goals:[] } };
+            let stats = { home: { yellow:0, red:0, corner:0, offside:0, goals:[] }, away: { yellow:0, red:0, corner:0, offside:0, goals:[] } };
+            
             this.currentReport.events.forEach(e => {
                 if(e.type === 'yellow') stats[e.team].yellow++;
                 if(e.type === 'red') stats[e.team].red++;
                 if(e.type === 'corner') stats[e.team].corner++;
+                if(e.type === 'offside') stats[e.team].offside++;
+                
                 if(e.type === 'goal' || e.type === 'penalty') {
                     stats[e.team].goals.push({ num: e.playerNum, player: '#' + e.playerNum + (e.playerName ? ' ' + e.playerName : ''), time: e.time });
+                }
+                if(e.type === 'own_goal') {
+                    // ავტოგოლი ეწერება მეტოქე გუნდის გოლებში (OG) ნიშნულით
+                    let oppositeTeam = e.team === 'home' ? 'away' : 'home';
+                    stats[oppositeTeam].goals.push({ num: e.playerNum, player: '#' + e.playerNum + (e.playerName ? ' ' + e.playerName : '') + ' (OG)', time: e.time });
                 }
             });
             this.currentReport.stats = stats; this.view = 'report';
