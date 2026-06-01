@@ -18,7 +18,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
 
@@ -28,25 +27,26 @@
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
             <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
             
-            <div class="relative z-10 w-full mb-10">
-                <div class="w-24 h-24 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-6 shadow-2xl transform rotate-3">
-                    <img src="logo.png" alt="E-Liga Logo" class="w-16 h-16 object-contain transform -rotate-3">
+            <div class="relative z-10 w-full mb-6">
+                <div class="w-20 h-20 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-4 shadow-2xl">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-14 h-14 object-contain">
                 </div>
-                <h1 class="text-4xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
-                <p class="text-eliga-cyan font-bold tracking-widest text-[10px] uppercase mt-2">Match Management</p>
+                <h1 class="text-3xl font-black text-eliga-blue uppercase tracking-tighter">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
             </div>
             
-            <div class="w-full space-y-4 relative z-10">
-                <button @click="loginAsGuest()" class="w-full bg-gray-50 border-2 border-gray-200 text-gray-600 py-4 rounded-2xl font-black text-lg shadow-sm transform active:scale-95 transition flex items-center justify-center space-x-3">
-                    <i class="fa-solid fa-user-astronaut text-xl text-eliga-cyan"></i> <span>სტუმარი</span>
-                </button>
-                <button @click="loginWithGoogle('manager')" class="w-full bg-magenta text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide flex items-center justify-center space-x-3">
-                    <i class="fa-solid fa-user-tie text-xl"></i> <span>მენეჯერი</span>
-                </button>
-                <button @click="loginWithGoogle('referee')" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center space-x-3 transform active:scale-95 transition shadow-xl">
-                    <i class="fa-solid fa-whistle text-xl text-yellow-400"></i> <span>მსაჯები</span>
-                </button>
-            </div>
+            <form @submit.prevent="submitLogin()" class="w-full space-y-4 relative z-10 bg-white/60 p-6 rounded-3xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                <div>
+                    <input type="text" x-model="loginUsername" placeholder="მომხმარებელი (User)" required autocomplete="off" class="w-full p-4 bg-gray-50 border rounded-xl outline-none font-bold text-sm focus:ring-2 ring-magenta">
+                </div>
+                <div>
+                    <input type="password" x-model="loginPassword" placeholder="პაროლი (Password)" required autocomplete="off" class="w-full p-4 bg-gray-50 border rounded-xl outline-none font-bold text-sm focus:ring-2 ring-magenta">
+                </div>
+                <button type="submit" class="w-full bg-magenta text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-pink-200 transform active:scale-95 transition">შესვლა</button>
+            </form>
+
+            <button @click="loginAsGuest()" class="mt-6 text-eliga-blue font-black text-sm tracking-wide underline relative z-10 hover:text-magenta transition">
+                <i class="fa-solid fa-user-astronaut mr-1"></i> შესვლა სტუმრის სტატუსით
+            </button>
         </div>
 
         <div x-show="view === 'home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
@@ -54,8 +54,8 @@
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
             
             <div class="relative z-10 space-y-4 w-full">
-                <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl transform rotate-3">
-                    <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain transform -rotate-3">
+                <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain">
                 </div>
                 <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
                 <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2">მენეჯერის პანელი</p>
@@ -72,11 +72,11 @@
             </div>
         </div>
 
-        <div x-show="view === 'referee_home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center bg-gray-50">
+        <div x-show="view === 'referee_home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center bg-gray-50 relative">
             <button @click="logout()" class="absolute top-6 right-6 text-red-400 font-bold text-xs uppercase"><i class="fa-solid fa-right-from-bracket"></i> გასვლა</button>
-            <i class="fa-solid fa-whistle text-6xl text-eliga-blue mb-4 animate-bounce"></i>
+            <i class="fa-solid fa-whistle text-6xl text-eliga-blue mb-4"></i>
             <h2 class="text-2xl font-black uppercase text-eliga-blue">მსაჯის კაბინეტი</h2>
-            <p class="text-gray-500 text-sm mt-2">ფუნქციები მალე დაემატება...</p>
+            <p class="text-gray-500 text-sm mt-2">ინსტრუმენტები დაემატება შემდეგ ეტაპზე...</p>
         </div>
 
         <div x-show="view === 'setup'" x-cloak class="p-6 pt-8 space-y-6 overflow-y-auto h-[100dvh] bg-white">
@@ -118,7 +118,7 @@
                                 <template x-for="p in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                     <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm">
                                         <div class="flex items-center"><strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong><span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || 'No name'"></span></div>
-                                        <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                                        <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
                                     </div>
                                 </template>
                             </div>
@@ -190,7 +190,7 @@
                 </div>
             </div>
             <div class="p-4 border-t bg-white absolute bottom-0 w-full z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
-                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition">Finish Match</button>
+                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
 
@@ -206,7 +206,7 @@
                     </div>
                     <div class="px-2 flex flex-col items-center flex-shrink-0">
                         <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg">
-                            <p class="text-4xl font-black font-mono tracking-wider text-white" x-text="getGuestTime()"></p>
+                            <p class="text-4xl font-black font-mono tracking-wider text-white" x-text="formatTime(firebaseLiveMatch?.displayTimer !== undefined ? firebaseLiveMatch?.displayTimer : firebaseLiveMatch?.timer)"></p>
                         </div>
                         <p class="text-[9px] font-bold text-white/60 mt-3 uppercase tracking-wider" x-text="firebaseLiveMatch?.isPaused ? 'შეჩერებულია' : 'მიმდინარეობს'"></p>
                     </div>
@@ -219,9 +219,6 @@
             
             <div class="flex-1 overflow-y-auto p-4 pt-6 space-y-5">
                 <div class="space-y-3 pb-8">
-                    <div class="flex items-center justify-between border-b pb-2">
-                        <h3 class="font-black text-gray-400 text-xs uppercase tracking-widest">Live Events</h3>
-                    </div>
                     <template x-for="ev in firebaseLiveMatch?.events" :key="ev.id">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
                             <div class="bg-gray-50 border rounded-lg px-3 py-2 mr-3"><span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span></div>
@@ -253,14 +250,14 @@
             
             <div class="flex-1 overflow-y-auto space-y-4">
                 
-                <template x-if="firebaseLiveMatch">
-                    <div @click="view = 'guest_live'" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse">
+                <template x-for="live in liveMatches" :key="live.id">
+                    <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
                         <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
                         <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
                         <div class="flex justify-between items-center text-center">
-                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="firebaseLiveMatch.homeName"></p><p class="text-3xl font-black mt-1" x-text="firebaseLiveMatch.scoreHome"></p></div>
-                            <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="getGuestTime()"></div>
-                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="firebaseLiveMatch.awayName"></p><p class="text-3xl font-black mt-1" x-text="firebaseLiveMatch.scoreAway"></p></div>
+                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
+                            <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="formatTime(live.displayTimer !== undefined ? live.displayTimer : live.timer)"></div>
+                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.awayName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreAway"></p></div>
                         </div>
                     </div>
                 </template>
@@ -287,7 +284,7 @@
                 <h2 class="text-lg font-black text-eliga-blue uppercase tracking-wider">Report</h2>
                 <button @click="downloadPDF()" class="text-white bg-magenta px-4 py-2 rounded-xl font-bold text-xs flex items-center shadow-md transform active:scale-95 transition"><i class="fa-solid fa-download mr-2"></i> PDF</button>
             </div>
-            <div class="flex-1 overflow-y-auto p-4">
+             <div class="flex-1 overflow-y-auto p-4">
                 <div id="pdf-content" class="bg-white rounded-2xl shadow-md p-6 pdf-container border-t-8 border-t-magenta">
                     <div class="text-center border-b pb-4 mb-4">
                         <h1 class="font-black text-2xl uppercase text-eliga-blue tracking-tighter">Match Report</h1>
