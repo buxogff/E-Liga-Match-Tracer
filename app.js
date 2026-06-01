@@ -115,13 +115,11 @@ function matchApp() {
 
         // ჭკვიანი უკან დაბრუნების ფუნქცია
         goBack() {
-            // თუ რომელიმე მოდალური ფანჯარაა ღია, ჯერ მას ხურავს
             if (this.modal.open) { this.modal.open = false; return; }
             if (this.timeModal.open) { this.timeModal.open = false; return; }
             if (this.scoreModal.open) { this.scoreModal.open = false; return; }
             if (this.editModal.open) { this.editModal.open = false; return; }
 
-            // ეკრანების მიხედვით უკან დაბრუნება
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
                 if (this.role === 'guest') this.logout();
