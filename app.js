@@ -13,9 +13,10 @@ const db = firebase.firestore();
 
 function matchApp() {
     return {
-        view: 'login', 
+        view: 'landing', // აპი იწყება მთავარი 3-ოფციიანი გვერდით
         role: localStorage.getItem('userRole') || null,
         
+        loginType: '', // ინახავს მენეჯერი აირჩია თუ მსაჯი
         loginUsername: '',
         loginPassword: '',
         
@@ -23,7 +24,6 @@ function matchApp() {
         hasActiveMatch: false, 
         currentReport: null,
         
-        // მრავალმომხმარებლიანი ლაივ სისტემის ცვლადები
         matchId: localStorage.getItem('activeMatchId') || null,
         liveMatches: [], 
         firebaseLiveMatch: null, 
@@ -37,21 +37,21 @@ function matchApp() {
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
 
         init() {
-            // როლების მიხედვით საწყისი გვერდის განსაზღვრა
+            // თუ როლი უკვე შენახულია ბრაუზერში, პირდაპირ შესაბამის გვერდზე გადაიყვანოს
             if (this.role === 'manager') this.view = 'home';
             else if (this.role === 'referee') this.view = 'referee_home';
             else if (this.role === 'guest') this.view = 'history';
-            else this.view = 'login';
+            else this.view = 'landing';
 
             this.hasActiveMatch = !!localStorage.getItem('activeMatch');
             
-            // 1. ისტორიის წამოღება
+            // ისტორიის წამოღება
             db.collection("matches").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 this.history = [];
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
             });
 
-            // 2. ყველა მიმდინარე ლაივ მატჩის მოსმენა რეალურ დროში
+            // მიმდინარე ლაივ მატჩების მოსმენა
             db.collection("live_matches").onSnapshot((snapshot) => {
                 this.liveMatches = [];
                 snapshot.forEach((doc) => {
@@ -61,19 +61,14 @@ function matchApp() {
                     this.liveMatches.push(data);
                 });
                 
-                // თუ სტუმარი ამ წამს უყურებს კონკრეტულ მატჩს, განუახლდეს ეკრანი
                 if (this.view === 'guest_live' && this.currentLiveMatchId) {
                     const found = this.liveMatches.find(m => m.id === this.currentLiveMatchId);
-                    if (found) {
-                        this.firebaseLiveMatch = found;
-                    } else {
-                        alert("მატჩი დასრულდა მენეჯერის მიერ!");
-                        this.view = 'history';
-                    }
+                    if (found) { this.firebaseLiveMatch = found; } 
+                    else { alert("მატჩი დასრულდა მენეჯერის მიერ!"); this.view = 'history'; }
                 }
             });
 
-            // 3. უნივერსალური წამზომის სინქრონიზატორი სტუმრებისთვის (ყველა მატჩისთვის ერთად)
+            // სინქრონული წამზომი სტუმრებისთვის
             setInterval(() => {
                 this.liveMatches.forEach(m => {
                     if (!m.isPaused && m.lastTick) {
@@ -83,14 +78,11 @@ function matchApp() {
                         if (currentTimer >= 2700 && m.timer < 2700) currentTimer = 2700;
                         if (currentTimer >= 5400 && m.timer < 5400) currentTimer = 5400;
                         m.displayTimer = currentTimer;
-                    } else {
-                        m.displayTimer = m.timer;
-                    }
+                    } else { m.displayTimer = m.timer; }
                 });
             }, 1000);
         },
 
-        // ავტორიზაციის ახალი სისტემა (User / Password)
         submitLogin() {
             let u = this.loginUsername.trim().toLowerCase();
             let p = this.loginPassword.trim();
@@ -120,10 +112,9 @@ function matchApp() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
             this.role = null;
             localStorage.removeItem('userRole');
-            this.view = 'login';
+            this.view = 'landing'; // გამოსვლისას აბრუნებს საწყის სამ-ოფციიან გვერდზე
         },
 
-        // სტუმარი ირჩევს რომელ ლაივ მატჩს უყუროს
         watchLiveMatch(liveMatchId) {
             this.currentLiveMatchId = liveMatchId;
             this.firebaseLiveMatch = this.liveMatches.find(m => m.id === liveMatchId);
@@ -134,8 +125,6 @@ function matchApp() {
             let matchToSave = { ...this.match, timerInterval: null };
             localStorage.setItem('activeMatch', JSON.stringify(matchToSave));
             this.hasActiveMatch = true;
-
-            // თითოეული ადმინი ინახავს თავის უნიკალურ დოკუმენტში
             if (this.matchId) {
                 db.collection("live_matches").doc(this.matchId).set(matchToSave).catch(err => console.log(err));
             }
@@ -161,10 +150,8 @@ function matchApp() {
         },
 
         startMatch() {
-            // იქმნება უნიკალური ID თითოეული მატჩისთვის
             this.matchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             localStorage.setItem('activeMatchId', this.matchId);
-
             this.match.homeName = this.setup.homeName || 'Home'; 
             this.match.awayName = this.setup.awayName || 'Away';
             this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
@@ -262,7 +249,6 @@ function matchApp() {
                 events: JSON.parse(JSON.stringify(this.match.events))
             };
             db.collection("matches").add(reportData).then(() => {
-                // მატჩის დასრულებისას იშლება მხოლოდ ამ კონკრეტული ადმინის ლაივ დოკუმენტი
                 if (this.matchId) {
                     db.collection("live_matches").doc(this.matchId).delete().then(() => {
                         localStorage.removeItem('activeMatch'); 
