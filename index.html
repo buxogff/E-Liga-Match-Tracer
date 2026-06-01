@@ -126,8 +126,9 @@
                         <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Substitute</button>
                     </div>
                     <div class="flex gap-2">
-                        <input type="number" x-model="setup.playerNum" placeholder="No." class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center">
-                        <input type="text" x-model="setup.playerName" placeholder="Player Name" class="w-3/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold">
+                        <!-- მობილურისთვის შეცვლილია TYPE="TEL" -->
+                        <input type="tel" x-model="setup.playerNum" placeholder="No." class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta">
+                        <input type="text" x-model="setup.playerName" placeholder="Player Name" class="w-3/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta">
                     </div>
                     <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                 </div>
@@ -139,9 +140,10 @@
                                 <span class="text-[10px] font-black bg-white px-2 py-1 rounded text-magenta shadow-sm" x-text="(setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).length + (status === 'starting' ? '/11' : '')"></span>
                             </div>
                             <div class="space-y-1">
-                                <template x-for="p in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                <!-- დამატებულია :KEY მყისიერი რეაქტიულობისთვის -->
+                                <template x-for="p in (setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))" :key="p.id">
                                     <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm">
-                                        <div class="flex items-center"><strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong><span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || 'No name'"></span></div>
+                                        <div class="flex items-center"><strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong><span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || ''"></span></div>
                                         <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
                                     </div>
                                 </template>
@@ -217,7 +219,6 @@
                 <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
-
         <div x-show="view === 'guest_live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white z-10"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -300,6 +301,7 @@
                 <div x-show="history.length === 0" class="text-center text-gray-400 font-bold mt-20">ისტორია ცარიელია</div>
             </div>
         </div>
+
         <div x-show="view === 'report'" x-cloak class="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
             <div class="p-4 pt-8 bg-white border-b flex items-center justify-between shadow-sm z-10">
                 <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
