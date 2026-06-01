@@ -78,9 +78,7 @@ function matchApp() {
                 });
             }, 1000);
 
-            // ==========================================
-            // ჟესტების მართვა (Swipe Back & Pull to Refresh)
-            // ==========================================
+            // Swipe ლოგიკა
             let startX = 0, startY = 0;
             window.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -93,12 +91,10 @@ function matchApp() {
                 let diffX = endX - startX;
                 let diffY = endY - startY;
                 
-                // Swipe Back (მარჯვნივ გაწევა ეკრანის მარცხენა კიდიდან)
                 if (diffX > 80 && Math.abs(diffY) < 60 && startX < 50) {
                     this.goBack();
                 }
                 
-                // Pull to Refresh (ქვემოთ ჩამოწევა ეკრანის ზედა ნაწილიდან)
                 let scrollContainers = document.querySelectorAll('.overflow-y-auto');
                 let isAtTop = true;
                 scrollContainers.forEach(el => {
@@ -113,7 +109,6 @@ function matchApp() {
             }, { passive: true });
         },
 
-        // ჭკვიანი უკან დაბრუნების ფუნქცია
         goBack() {
             if (this.modal.open) { this.modal.open = false; return; }
             if (this.timeModal.open) { this.timeModal.open = false; return; }
@@ -194,6 +189,46 @@ function matchApp() {
                     this.match.lastTick = now;
                     if (!this.match.isPaused) this.startInterval();
                 }
+            }
+        },
+
+        // =====================================
+        // დაცული და 100% მუშა მოთამაშის დამატება
+        // =====================================
+        addPlayerToSetup() {
+            if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') {
+                return; 
+            }
+            
+            const newPlayer = { 
+                id: Date.now(), 
+                num: this.setup.playerNum.toString(), 
+                name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', 
+                status: this.setup.playerStatus 
+            };
+            
+            if (this.setup.activeTab === 'home') {
+                this.setup.homePlayers = [...this.setup.homePlayers, newPlayer];
+            } else {
+                this.setup.awayPlayers = [...this.setup.awayPlayers, newPlayer];
+            }
+            
+            let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
+            let startersCount = currentList.filter(x => x.status === 'starting').length;
+            
+            if (this.setup.playerStatus === 'starting' && startersCount >= 11) { 
+                this.setup.playerStatus = 'sub'; 
+            }
+            
+            this.setup.playerNum = ''; 
+            this.setup.playerName = '';
+        },
+
+        removePlayerFromSetup(id) {
+            if (this.setup.activeTab === 'home') {
+                this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
+            } else {
+                this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
             }
         },
 
