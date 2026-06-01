@@ -262,7 +262,6 @@
                 </div>
             </div>
         </div>
-
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border relative">
                 <button @click="logout()" class="p-2 text-gray-500 hover:text-magenta transition">
@@ -362,6 +361,7 @@
                                     </template>
                                 </div>
                             </template>
+                            <div x-show="!currentReport?.events?.length" class="text-[10px] font-bold text-gray-400 text-center py-4">No events recorded.</div>
                         </div>
                     </div>
                     <div>
@@ -465,7 +465,8 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წამი</label>
                         <select x-model="timeModal.sec" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                 </div>
                 <div class="flex space-x-2 pt-4">
