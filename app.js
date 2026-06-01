@@ -10,20 +10,24 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
 
 function matchApp() {
     return {
         view: 'login', 
         role: localStorage.getItem('userRole') || null,
-        user: null,
+        
+        loginUsername: '',
+        loginPassword: '',
         
         history: [], 
         hasActiveMatch: false, 
         currentReport: null,
-        firebaseLiveMatch: null, // აქ შეინახება ონლაინ მიმდინარე მატჩი სტუმრებისთვის
-        guestLiveInterval: null,
+        
+        // მრავალმომხმარებლიანი ლაივ სისტემის ცვლადები
+        matchId: localStorage.getItem('activeMatchId') || null,
+        liveMatches: [], 
+        firebaseLiveMatch: null, 
+        currentLiveMatchId: null,
 
         setup: { activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], playerStatus: 'starting', playerNum: '', playerName: '' },
         match: { homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null },
@@ -33,60 +37,77 @@ function matchApp() {
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
 
         init() {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    this.user = user;
-                    if (!this.role) this.role = 'manager'; 
-                    if (this.role === 'manager') this.view = 'home';
-                    else if (this.role === 'referee') this.view = 'referee_home';
-                } else {
-                    if (this.role === 'guest') this.view = 'history';
-                    else this.view = 'login';
-                }
-            });
+            // როლების მიხედვით საწყისი გვერდის განსაზღვრა
+            if (this.role === 'manager') this.view = 'home';
+            else if (this.role === 'referee') this.view = 'referee_home';
+            else if (this.role === 'guest') this.view = 'history';
+            else this.view = 'login';
 
             this.hasActiveMatch = !!localStorage.getItem('activeMatch');
             
-            // დასრულებული მატჩების ისტორია
+            // 1. ისტორიის წამოღება
             db.collection("matches").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 this.history = [];
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
             });
 
-            // ონლაინ რეჟიმში მიმდინარე მატჩის მოსმენა (სტუმრებისთვის)
-            db.collection("live_match").doc("current").onSnapshot((doc) => {
-                if (doc.exists) {
-                    this.firebaseLiveMatch = doc.data();
-                    this.syncGuestTimer();
-                } else {
-                    this.firebaseLiveMatch = null;
-                    if (this.guestLiveInterval) clearInterval(this.guestLiveInterval);
+            // 2. ყველა მიმდინარე ლაივ მატჩის მოსმენა რეალურ დროში
+            db.collection("live_matches").onSnapshot((snapshot) => {
+                this.liveMatches = [];
+                snapshot.forEach((doc) => {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    data.displayTimer = data.timer;
+                    this.liveMatches.push(data);
+                });
+                
+                // თუ სტუმარი ამ წამს უყურებს კონკრეტულ მატჩს, განუახლდეს ეკრანი
+                if (this.view === 'guest_live' && this.currentLiveMatchId) {
+                    const found = this.liveMatches.find(m => m.id === this.currentLiveMatchId);
+                    if (found) {
+                        this.firebaseLiveMatch = found;
+                    } else {
+                        alert("მატჩი დასრულდა მენეჯერის მიერ!");
+                        this.view = 'history';
+                    }
                 }
             });
-        },
 
-        // სტუმრის ტაიმერის ავტომატური სინქრონიზაცია მენეჯერთან
-        syncGuestTimer() {
-            if (this.guestLiveInterval) clearInterval(this.guestLiveInterval);
-            if (!this.firebaseLiveMatch || this.firebaseLiveMatch.isPaused) return;
-
-            this.guestLiveInterval = setInterval(() => {
-                if (!this.firebaseLiveMatch || this.firebaseLiveMatch.isPaused) return;
-                let now = Date.now();
-                let diff = Math.floor((now - this.firebaseLiveMatch.lastTick) / 1000);
-                let currentTimer = this.firebaseLiveMatch.timer + diff;
-                
-                if (currentTimer >= 2700 && this.firebaseLiveMatch.timer < 2700) currentTimer = 2700;
-                if (currentTimer >= 5400 && this.firebaseLiveMatch.timer < 5400) currentTimer = 5400;
-                
-                this.firebaseLiveMatch.displayTimer = currentTimer;
+            // 3. უნივერსალური წამზომის სინქრონიზატორი სტუმრებისთვის (ყველა მატჩისთვის ერთად)
+            setInterval(() => {
+                this.liveMatches.forEach(m => {
+                    if (!m.isPaused && m.lastTick) {
+                        let now = Date.now();
+                        let diff = Math.floor((now - m.lastTick) / 1000);
+                        let currentTimer = m.timer + diff;
+                        if (currentTimer >= 2700 && m.timer < 2700) currentTimer = 2700;
+                        if (currentTimer >= 5400 && m.timer < 5400) currentTimer = 5400;
+                        m.displayTimer = currentTimer;
+                    } else {
+                        m.displayTimer = m.timer;
+                    }
+                });
             }, 1000);
         },
 
-        getGuestTime() {
-            if (!this.firebaseLiveMatch) return '00:00';
-            let t = this.firebaseLiveMatch.displayTimer !== undefined ? this.firebaseLiveMatch.displayTimer : this.firebaseLiveMatch.timer;
-            return this.formatTime(t);
+        // ავტორიზაციის ახალი სისტემა (User / Password)
+        submitLogin() {
+            let u = this.loginUsername.trim().toLowerCase();
+            let p = this.loginPassword.trim();
+
+            if (u === 'manager' && p === 'eliga2026') {
+                this.role = 'manager';
+                localStorage.setItem('userRole', 'manager');
+                this.view = 'home';
+            } else if (u === 'referee' && p === 'referee2026') {
+                this.role = 'referee';
+                localStorage.setItem('userRole', 'referee');
+                this.view = 'referee_home';
+            } else {
+                alert("არასწორი მომხმარებელი ან პაროლი!");
+            }
+            this.loginUsername = '';
+            this.loginPassword = '';
         },
 
         loginAsGuest() {
@@ -94,22 +115,19 @@ function matchApp() {
             localStorage.setItem('userRole', 'guest');
             this.view = 'history';
         },
-        loginWithGoogle(selectedRole) {
-            this.role = selectedRole;
-            localStorage.setItem('userRole', selectedRole);
-            auth.signInWithPopup(provider).catch(error => {
-                alert("შეცდომა: " + error.message);
-                this.role = null; localStorage.removeItem('userRole');
-            });
-        },
+
         logout() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
-            if (this.guestLiveInterval) clearInterval(this.guestLiveInterval);
-            auth.signOut().then(() => {
-                this.user = null; this.role = null;
-                localStorage.removeItem('userRole');
-                this.view = 'login';
-            });
+            this.role = null;
+            localStorage.removeItem('userRole');
+            this.view = 'login';
+        },
+
+        // სტუმარი ირჩევს რომელ ლაივ მატჩს უყუროს
+        watchLiveMatch(liveMatchId) {
+            this.currentLiveMatchId = liveMatchId;
+            this.firebaseLiveMatch = this.liveMatches.find(m => m.id === liveMatchId);
+            this.view = 'guest_live';
         },
 
         saveState() {
@@ -117,11 +135,14 @@ function matchApp() {
             localStorage.setItem('activeMatch', JSON.stringify(matchToSave));
             this.hasActiveMatch = true;
 
-            // მატჩის მიმდინარეობისას მონაცემები მომენტალურად იგზავნება ონლაინ ბაზაში სტუმრებისთვის
-            db.collection("live_match").doc("current").set(matchToSave).catch(err => console.log(err));
+            // თითოეული ადმინი ინახავს თავის უნიკალურ დოკუმენტში
+            if (this.matchId) {
+                db.collection("live_matches").doc(this.matchId).set(matchToSave).catch(err => console.log(err));
+            }
         },
 
         resumeMatch() {
+            this.matchId = localStorage.getItem('activeMatchId');
             let saved = JSON.parse(localStorage.getItem('activeMatch'));
             if (saved) {
                 this.match = saved;
@@ -138,21 +159,12 @@ function matchApp() {
                 }
             }
         },
-        addPlayerToSetup() {
-            if (!this.setup.playerNum) return;
-            const p = { id: Date.now(), num: this.setup.playerNum, name: this.setup.playerName, status: this.setup.playerStatus };
-            if (this.setup.activeTab === 'home') this.setup.homePlayers.push(p);
-            else this.setup.awayPlayers.push(p);
-            let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
-            let startersCount = currentList.filter(x => x.status === 'starting').length;
-            if (this.setup.playerStatus === 'starting' && startersCount >= 11) { this.setup.playerStatus = 'sub'; }
-            this.setup.playerNum = ''; this.setup.playerName = '';
-        },
-        removePlayerFromSetup(id) {
-            if (this.setup.activeTab === 'home') this.setup.homePlayers = this.setup.homePlayers.filter(x => x.id !== id);
-            else this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
-        },
+
         startMatch() {
+            // იქმნება უნიკალური ID თითოეული მატჩისთვის
+            this.matchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            localStorage.setItem('activeMatchId', this.matchId);
+
             this.match.homeName = this.setup.homeName || 'Home'; 
             this.match.awayName = this.setup.awayName || 'Away';
             this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
@@ -161,6 +173,7 @@ function matchApp() {
             this.match.timer = 0; this.match.isPaused = true; this.match.lastTick = Date.now();
             this.view = 'live'; this.saveState();
         },
+
         startInterval() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
             this.match.lastTick = Date.now();
@@ -179,6 +192,7 @@ function matchApp() {
                 }
             }, 1000);
         },
+
         toggleTimer() {
             this.match.isPaused = !this.match.isPaused;
             if (!this.match.isPaused) { this.startInterval(); } 
@@ -248,10 +262,16 @@ function matchApp() {
                 events: JSON.parse(JSON.stringify(this.match.events))
             };
             db.collection("matches").add(reportData).then(() => {
-                // მატჩის დასრულებისას ვშლით მიმდინარე ლაივ რეჟიმს
-                db.collection("live_match").doc("current").delete().then(() => {
-                    localStorage.removeItem('activeMatch'); this.hasActiveMatch = false; this.view = 'history';
-                });
+                // მატჩის დასრულებისას იშლება მხოლოდ ამ კონკრეტული ადმინის ლაივ დოკუმენტი
+                if (this.matchId) {
+                    db.collection("live_matches").doc(this.matchId).delete().then(() => {
+                        localStorage.removeItem('activeMatch'); 
+                        localStorage.removeItem('activeMatchId');
+                        this.matchId = null;
+                        this.hasActiveMatch = false; 
+                        this.view = 'history';
+                    });
+                }
             }).catch(() => { alert("შეცდომა! შეამოწმეთ ინტერნეტი."); });
         },
         viewReport(index) {
