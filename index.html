@@ -264,9 +264,11 @@
 
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border relative">
+                
                 <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition">
-                    <i class="fa-solid" :class="role === 'guest' ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i>
+                    <i class="fa-solid text-xl" :class="role === 'guest' ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i>
                 </button>
+                
                 <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider">History</h2>
                 <button x-show="role === 'manager'" @click="clearHistory()" class="text-red-500 text-[10px] font-black bg-red-50 px-3 py-2 rounded-lg tracking-widest uppercase">Clear</button>
             </div>
