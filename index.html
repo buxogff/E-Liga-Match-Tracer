@@ -175,7 +175,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="flex-1 overflow-y-auto p-4 pt-6 space-y-5">
                 <div class="grid grid-cols-4 gap-2">
                     <template x-for="type in ['goal', 'own_goal', 'penalty', 'yellow', 'red', 'corner', 'offside', 'sub']">
@@ -324,7 +323,6 @@
 
                 <template x-for="(h, index) in history">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
-                        <button x-show="role === 'manager'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100"><i class="fa-solid fa-trash-can text-sm"></i></button>
                         <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
                         <div class="flex justify-between items-center">
                             <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
@@ -395,7 +393,7 @@
                                     <template x-if="ev.type === 'sub'">
                                         <div class="flex flex-col space-y-1 ml-1 w-full">
                                             <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">Out: <strong x-text="'#'+ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></strong></span></span>
-                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">In: <strong x-text="'#'+ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></strong></span></span>
+                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
                                         </div>
                                     </template>
                                 </div>
@@ -533,12 +531,14 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წუთი</label>
                         <select x-model="timeModal.min" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წამი</label>
                         <select x-model="timeModal.sec" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                 </div>
                 <div class="flex space-x-2 pt-4">
@@ -567,12 +567,14 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
                         <select x-model="editModal.min" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წამი</label>
                         <select x-model="editModal.sec" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                 </div>
                 <div>
