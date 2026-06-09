@@ -312,6 +312,9 @@
                 <template x-for="live in liveMatches" :key="live.id">
                     <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
                         <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
+                        
+                        <button x-show="role === 'manager'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
+
                         <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
                         <div class="flex justify-between items-center text-center">
                             <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
@@ -323,6 +326,9 @@
 
                 <template x-for="(h, index) in history">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
+                        
+                        <button x-show="role === 'manager'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        
                         <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
                         <div class="flex justify-between items-center">
                             <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
@@ -353,6 +359,7 @@
                         <div class="text-sm font-black text-gray-300 mx-2">VS</div>
                         <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
                     </div>
+                    
                     <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
                         <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
                             <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.homeName + ' GOALS'"></h4>
@@ -369,6 +376,7 @@
                             <div x-show="!currentReport?.stats?.away?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
                         </div>
                     </div>
+                    
                     <div class="mb-6">
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Statistics</h3>
                         <table class="w-full text-sm">
@@ -531,14 +539,12 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წუთი</label>
                         <select x-model="timeModal.min" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წამი</label>
                         <select x-model="timeModal.sec" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                 </div>
                 <div class="flex space-x-2 pt-4">
@@ -567,14 +573,12 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
                         <select x-model="editModal.min" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წამი</label>
                         <select x-model="editModal.sec" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                 </div>
                 <div>
