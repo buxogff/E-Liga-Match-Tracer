@@ -154,6 +154,19 @@ function matchApp() {
             this.view = 'guest_live';
         },
 
+        // ახალი: გაჭედილი ლაივ მატჩის წაშლის ფუნქცია მენეჯერებისთვის
+        deleteLiveMatch(id) {
+            if(confirm('წავშალოთ გაჭედილი ლაივ მატჩი? (მონაცემები ისტორიაში არ შეინახება)')) {
+                db.collection("live_matches").doc(id).delete();
+                if(this.matchId === id) {
+                    localStorage.removeItem('activeMatch');
+                    localStorage.removeItem('activeMatchId');
+                    this.matchId = null;
+                    this.hasActiveMatch = false;
+                }
+            }
+        },
+
         saveState() {
             let matchToSave = { ...this.match, timerInterval: null };
             localStorage.setItem('activeMatch', JSON.stringify(matchToSave));
@@ -269,7 +282,6 @@ function matchApp() {
             this.modal.open = false; this.saveState();
         },
 
-        // ახალი: გუნდური ივენთის დამატება (კუთხური, თამაშგარე)
         recordTeamEvent() {
             this.match.events.unshift({ 
                 id: Date.now() + Math.random(), 
@@ -311,7 +323,6 @@ function matchApp() {
         openEventEdit(index) {
             let ev = this.match.events[index]; this.editModal.index = index; this.editModal.type = ev.type; this.editModal.team = ev.team;
             let tParts = ev.time.split(':'); this.editModal.min = parseInt(tParts[0]); this.editModal.sec = parseInt(tParts[1]);
-            // თუ გუნდური ივენთი არაა, ვანახვებთ ფეხბურთელს
             if(!['sub', 'corner', 'offside'].includes(ev.type)) {
                 this.editModal.playerNum = ev.playerNum;
             }
@@ -321,7 +332,6 @@ function matchApp() {
             let ev = this.match.events[this.editModal.index];
             ev.team = this.editModal.team; ev.time = this.formatTime(parseInt(this.editModal.min) * 60 + parseInt(this.editModal.sec));
             
-            // თუ გუნდური ივენთი არაა, ვანახლებთ მოთამაშის მონაცემებს
             if(!['sub', 'corner', 'offside'].includes(ev.type)) {
                 let list = ev.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
                 let p = list.find(x => x.num == this.editModal.playerNum);
@@ -329,6 +339,8 @@ function matchApp() {
             }
             this.editModal.open = false; this.saveState();
         },
+
+        // გასწორებული: მატჩის დასრულების დახვეწილი და დაცული ლოგიკა
         finishMatch() {
             if (!confirm('ნამდვილად გსურთ მატჩის დასრულება?')) return;
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
@@ -341,15 +353,20 @@ function matchApp() {
                 awayPlayers: JSON.parse(JSON.stringify(this.match.awayPlayers)),
                 events: JSON.parse(JSON.stringify(this.match.events))
             };
+
             db.collection("matches").add(reportData).then(() => {
+                // ყოველთვის ვშლით ლოკალურად და ვხურავთ ეკრანს (თუნდაც ლაივი არ ყოფილიყო ბაზაში)
                 if (this.matchId) {
-                    db.collection("live_matches").doc(this.matchId).delete().then(() => {
-                        localStorage.removeItem('activeMatch'); localStorage.removeItem('activeMatchId');
-                        this.matchId = null; this.hasActiveMatch = false; this.view = 'history';
-                    });
+                    db.collection("live_matches").doc(this.matchId).delete().catch(err => console.log(err));
                 }
+                localStorage.removeItem('activeMatch'); 
+                localStorage.removeItem('activeMatchId');
+                this.matchId = null; 
+                this.hasActiveMatch = false; 
+                this.view = 'history';
             }).catch(() => { alert("შეცდომა! შეამოწმეთ ინტერნეტი."); });
         },
+
         viewReport(index) {
             this.currentReport = this.history[index];
             let stats = { home: { yellow:0, red:0, corner:0, offside:0, goals:[] }, away: { yellow:0, red:0, corner:0, offside:0, goals:[] } };
@@ -374,11 +391,6 @@ function matchApp() {
             if(confirm('ნამდვილად გსურთ ამ მატჩის ისტორიიდან წაშლა?')) {
                 db.collection("matches").doc(this.history[index].id).delete();
             }
-        },
-        clearHistory() { 
-            if (confirm('წავშალოთ მთლიანი ისტორია?')) { 
-                this.history.forEach(h => db.collection("matches").doc(h.id).delete()); 
-            } 
         },
         downloadPDF() {
             const element = document.getElementById('pdf-content');
