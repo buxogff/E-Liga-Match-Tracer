@@ -225,7 +225,7 @@
                             </div>
                             <div class="flex-1 text-sm min-w-0 pr-2">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
-                                <template x-if="ev.type !== 'sub'"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
+                                <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
                                 <template x-if="ev.type === 'sub'">
                                     <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
                                         <span class="text-red-500 flex items-start"><i class="fa-solid fa-arrow-down mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
@@ -245,7 +245,6 @@
                 <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
-
         <div x-show="view === 'guest_live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white z-10"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -288,7 +287,7 @@
                             </div>
                             <div class="flex-1 text-sm min-w-0 pr-2">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? firebaseLiveMatch?.homeName : firebaseLiveMatch?.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
-                                <template x-if="ev.type !== 'sub'"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
+                                <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
                                 <template x-if="ev.type === 'sub'">
                                     <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
                                         <span class="text-red-500 flex items-start"><i class="fa-solid fa-arrow-down mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
@@ -301,13 +300,13 @@
                 </div>
             </div>
         </div>
+
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border relative">
                 <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition">
                     <i class="fa-solid" :class="role === 'guest' ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i>
                 </button>
-                <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider">History</h2>
-                <button x-show="role === 'manager'" @click="clearHistory()" class="text-red-500 text-[10px] font-black bg-red-50 px-3 py-2 rounded-lg tracking-widest uppercase">Clear</button>
+                <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider mx-auto pr-8">History</h2>
             </div>
             
             <div class="flex-1 overflow-y-auto space-y-4">
@@ -392,7 +391,7 @@
                                     <span class="font-mono font-black text-gray-400 w-10 shrink-0" x-text="ev.time"></span>
                                     <span class="font-bold text-gray-600 w-16 break-words whitespace-normal uppercase text-[9px] shrink-0" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
                                     <span class="uppercase font-black w-14 text-[9px] shrink-0" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type.replace('_', ' ')"></span>
-                                    <template x-if="ev.type !== 'sub'"><span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span></template>
+                                    <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span></template>
                                     <template x-if="ev.type === 'sub'">
                                         <div class="flex flex-col space-y-1 ml-1 w-full">
                                             <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">Out: <strong x-text="'#'+ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></strong></span></span>
@@ -501,7 +500,15 @@
                     </div>
                 </template>
                 
-                <template x-if="modal.type !== 'sub'">
+                <template x-if="['corner', 'offside'].includes(modal.type)">
+                    <div class="pt-4">
+                        <button @click="recordTeamEvent()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase hover:opacity-90 transition shadow-md">
+                            დადასტურება
+                        </button>
+                    </div>
+                </template>
+
+                <template x-if="!['sub', 'corner', 'offside'].includes(modal.type)">
                     <div class="max-h-64 overflow-y-auto grid grid-cols-2 gap-2 p-1 pt-2">
                         <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                             <button 
@@ -526,14 +533,12 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წუთი</label>
                         <select x-model="timeModal.min" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წამი</label>
                         <select x-model="timeModal.sec" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                 </div>
                 <div class="flex space-x-2 pt-4">
@@ -557,19 +562,17 @@
 
         <div x-show="editModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-50">
             <div class="bg-white p-6 rounded-3xl w-11/12 max-w-sm space-y-5 shadow-2xl" @click.away="editModal.open = false">
-                <h3 class="font-black text-lg text-center uppercase tracking-wider border-b border-gray-100 pb-3 text-eliga-blue" x-text="'Edit ' + editModal.type"></h3>
+                <h3 class="font-black text-lg text-center uppercase tracking-wider border-b border-gray-100 pb-3 text-eliga-blue" x-text="'Edit ' + editModal.type.replace('_', ' ')"></h3>
                 <div class="flex space-x-4">
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
                         <select x-model="editModal.min" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წამი</label>
                         <select x-model="editModal.sec" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
-                        </select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
                     </div>
                 </div>
                 <div>
@@ -579,7 +582,7 @@
                         <button @click="editModal.team = 'away'" :class="editModal.team === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-[11px] uppercase tracking-wider font-black transition truncate px-1" x-text="match.awayName"></button>
                     </div>
                 </div>
-                <template x-if="editModal.type !== 'sub'">
+                <template x-if="!['sub', 'corner', 'offside'].includes(editModal.type)">
                     <div>
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">მოთამაშე</label>
                         <select x-model="editModal.playerNum" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-800 appearance-none">
