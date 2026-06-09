@@ -78,7 +78,6 @@ function matchApp() {
                 });
             }, 1000);
 
-            // Swipe Logic
             let startX = 0, startY = 0;
             window.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -239,7 +238,6 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
-        // ამოწმებს მოთამაშის სტატუსს (წითელი აქვს თუ შეცვლილია)
         getPlayerState(teamStr, num) {
             if (!this.match.events) return 'active';
             let hasRed = this.match.events.some(e => e.team === teamStr && e.type === 'red' && e.playerNum == num);
@@ -252,7 +250,6 @@ function matchApp() {
         openEventModal(type) { this.modal.type = type; this.modal.open = true; this.modal.playerOut = null; this.modal.playerIn = null; },
         
         recordStandardEvent(p) {
-            // ავტომატური წითელი ბარათის შემოწმება
             if (this.modal.type === 'yellow') {
                 let hasYellow = this.match.events.some(e => e.type === 'yellow' && e.team === this.modal.team && e.playerNum === p.num);
                 if (hasYellow) {
@@ -263,22 +260,33 @@ function matchApp() {
 
             this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
             
-            // ანგარიშის განახლება
             if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
                 if (this.modal.team === 'home') this.match.scoreHome++; else this.match.scoreAway++;
             } else if (this.modal.type === 'own_goal') {
-                // ავტოგოლის დროს მოწინააღმდეგეს ემატება გოლი
                 if (this.modal.team === 'home') this.match.scoreAway++; else this.match.scoreHome++;
             }
             
             this.modal.open = false; this.saveState();
         },
 
+        // ახალი: გუნდური ივენთის დამატება (კუთხური, თამაშგარე)
+        recordTeamEvent() {
+            this.match.events.unshift({ 
+                id: Date.now() + Math.random(), 
+                type: this.modal.type, 
+                team: this.modal.team, 
+                playerNum: null, 
+                playerName: null, 
+                time: this.formatTime(this.match.timer) 
+            });
+            this.modal.open = false; 
+            this.saveState();
+        },
+
         recordSubstitution() {
             const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             const pOut = list.find(x => x.id === this.modal.playerOut.id);
             const pIn = list.find(x => x.id === this.modal.playerIn.id);
-            // სტატუსებს აღარ ვცვლით მასივში, getPlayerState თავად აკონტროლებს ივენთებიდან
             this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
             this.modal.open = false; this.saveState();
         },
@@ -303,13 +311,18 @@ function matchApp() {
         openEventEdit(index) {
             let ev = this.match.events[index]; this.editModal.index = index; this.editModal.type = ev.type; this.editModal.team = ev.team;
             let tParts = ev.time.split(':'); this.editModal.min = parseInt(tParts[0]); this.editModal.sec = parseInt(tParts[1]);
-            if(ev.type !== 'sub') this.editModal.playerNum = ev.playerNum;
+            // თუ გუნდური ივენთი არაა, ვანახვებთ ფეხბურთელს
+            if(!['sub', 'corner', 'offside'].includes(ev.type)) {
+                this.editModal.playerNum = ev.playerNum;
+            }
             this.editModal.open = true;
         },
         saveEventEdit() {
             let ev = this.match.events[this.editModal.index];
             ev.team = this.editModal.team; ev.time = this.formatTime(parseInt(this.editModal.min) * 60 + parseInt(this.editModal.sec));
-            if(ev.type !== 'sub') {
+            
+            // თუ გუნდური ივენთი არაა, ვანახლებთ მოთამაშის მონაცემებს
+            if(!['sub', 'corner', 'offside'].includes(ev.type)) {
                 let list = ev.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
                 let p = list.find(x => x.num == this.editModal.playerNum);
                 if(p) { ev.playerNum = p.num; ev.playerName = p.name; }
@@ -351,7 +364,6 @@ function matchApp() {
                     stats[e.team].goals.push({ num: e.playerNum, player: '#' + e.playerNum + (e.playerName ? ' ' + e.playerName : ''), time: e.time });
                 }
                 if(e.type === 'own_goal') {
-                    // ავტოგოლი ეწერება მეტოქე გუნდის გოლებში (OG) ნიშნულით
                     let oppositeTeam = e.team === 'home' ? 'away' : 'home';
                     stats[oppositeTeam].goals.push({ num: e.playerNum, player: '#' + e.playerNum + (e.playerName ? ' ' + e.playerName : '') + ' (OG)', time: e.time });
                 }
