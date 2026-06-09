@@ -29,6 +29,10 @@ function matchApp() {
         firebaseLiveMatch: null, 
         currentLiveMatchId: null,
 
+        // ხმოვანი შეყვანისთვის საჭირო ცვლადები
+        isListening: false,
+        recognition: null,
+
         setup: { activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], playerStatus: 'starting', playerNum: '', playerName: '' },
         match: { homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null },
         modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
@@ -78,6 +82,29 @@ function matchApp() {
                 });
             }, 1000);
 
+            // ხმოვანი ძრავის ინიციალიზაცია (თუ ბრაუზერს აქვს მხარდაჭერა)
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                this.recognition = new SpeechRecognition();
+                this.recognition.lang = 'ka-GE'; // ქართული ენა
+                this.recognition.continuous = false; // არ უსმინოს გაუჩერებლად
+                this.recognition.interimResults = false;
+                
+                this.recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    this.setup.playerName = transcript; // ავსებს ველს
+                };
+                
+                this.recognition.onerror = (event) => {
+                    console.error("Speech recognition error", event.error);
+                    this.isListening = false;
+                };
+                
+                this.recognition.onend = () => {
+                    this.isListening = false; // თიშავს მიკროფონს საუბრის დასრულებისას
+                };
+            }
+
             let startX = 0, startY = 0;
             window.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -106,6 +133,24 @@ function matchApp() {
                     }
                 }
             }, { passive: true });
+        },
+
+        // მიკროფონის ჩართვა/გამორთვის ფუნქცია
+        toggleListening() {
+            if (!this.recognition) {
+                alert("თქვენი ბრაუზერი არ უჭერს მხარს ხმოვან შეყვანას.");
+                return;
+            }
+            if (this.isListening) {
+                this.recognition.stop();
+            } else {
+                try {
+                    this.recognition.start();
+                    this.isListening = true;
+                } catch(e) {
+                    console.log(e);
+                }
+            }
         },
 
         goBack() {
@@ -154,7 +199,6 @@ function matchApp() {
             this.view = 'guest_live';
         },
 
-        // ახალი: გაჭედილი ლაივ მატჩის წაშლის ფუნქცია მენეჯერებისთვის
         deleteLiveMatch(id) {
             if(confirm('წავშალოთ გაჭედილი ლაივ მატჩი? (მონაცემები ისტორიაში არ შეინახება)')) {
                 db.collection("live_matches").doc(id).delete();
@@ -196,6 +240,12 @@ function matchApp() {
         },
 
         addPlayerToSetup() {
+            // თუ მიკროფონი ჩართულია, დამატების ღილაკზე დაჭერისას ვთიშავთ
+            if (this.isListening && this.recognition) {
+                this.recognition.stop();
+                this.isListening = false;
+            }
+
             if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') return; 
             const newPlayer = { id: Date.now(), num: this.setup.playerNum.toString(), name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', status: this.setup.playerStatus };
             if (this.setup.activeTab === 'home') this.setup.homePlayers = [...this.setup.homePlayers, newPlayer];
@@ -340,7 +390,6 @@ function matchApp() {
             this.editModal.open = false; this.saveState();
         },
 
-        // გასწორებული: მატჩის დასრულების დახვეწილი და დაცული ლოგიკა
         finishMatch() {
             if (!confirm('ნამდვილად გსურთ მატჩის დასრულება?')) return;
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
@@ -355,7 +404,6 @@ function matchApp() {
             };
 
             db.collection("matches").add(reportData).then(() => {
-                // ყოველთვის ვშლით ლოკალურად და ვხურავთ ეკრანს (თუნდაც ლაივი არ ყოფილიყო ბაზაში)
                 if (this.matchId) {
                     db.collection("live_matches").doc(this.matchId).delete().catch(err => console.log(err));
                 }
