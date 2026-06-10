@@ -125,10 +125,18 @@
                         <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Starting XI</button>
                         <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Substitute</button>
                     </div>
+                    
+                    <!-- განახლებული შეყვანის ველები მიკროფონით -->
                     <div class="flex gap-2">
                         <input type="tel" x-model="setup.playerNum" placeholder="No." class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta">
-                        <input type="text" x-model="setup.playerName" placeholder="Player Name" class="w-3/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta">
+                        <div class="relative w-3/4">
+                            <input type="text" x-model="setup.playerName" placeholder="Player Name" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta">
+                            <button @click="toggleListening()" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="isListening ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-100'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
                     </div>
+                    
                     <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                 </div>
                 <div class="space-y-5">
@@ -152,7 +160,6 @@
                 <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl mt-6 tracking-widest uppercase">Start Match</button>
             </div>
         </div>
-
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white transition z-10"><i class="fa-solid fa-house text-xl"></i></button>
@@ -244,6 +251,7 @@
                 <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
             </div>
         </div>
+
         <div x-show="view === 'guest_live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white z-10"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -312,7 +320,9 @@
                 <template x-for="live in liveMatches" :key="live.id">
                     <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
                         <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
+                        
                         <button x-show="role === 'manager'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
+
                         <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
                         <div class="flex justify-between items-center text-center">
                             <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
@@ -324,7 +334,9 @@
 
                 <template x-for="(h, index) in history">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
+                        
                         <button x-show="role === 'manager'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        
                         <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
                         <div class="flex justify-between items-center">
                             <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
