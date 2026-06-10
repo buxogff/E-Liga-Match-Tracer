@@ -29,7 +29,6 @@ function matchApp() {
         firebaseLiveMatch: null, 
         currentLiveMatchId: null,
 
-        // ხმოვანი შეყვანისთვის საჭირო ცვლადები
         isListening: false,
         recognition: null,
 
@@ -82,17 +81,16 @@ function matchApp() {
                 });
             }, 1000);
 
-            // ხმოვანი ძრავის ინიციალიზაცია (თუ ბრაუზერს აქვს მხარდაჭერა)
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SpeechRecognition) {
                 this.recognition = new SpeechRecognition();
-                this.recognition.lang = 'ka-GE'; // ქართული ენა
-                this.recognition.continuous = false; // არ უსმინოს გაუჩერებლად
+                this.recognition.lang = 'ka-GE'; 
+                this.recognition.continuous = false; 
                 this.recognition.interimResults = false;
                 
                 this.recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
-                    this.setup.playerName = transcript; // ავსებს ველს
+                    this.setup.playerName = transcript; 
                 };
                 
                 this.recognition.onerror = (event) => {
@@ -101,7 +99,7 @@ function matchApp() {
                 };
                 
                 this.recognition.onend = () => {
-                    this.isListening = false; // თიშავს მიკროფონს საუბრის დასრულებისას
+                    this.isListening = false; 
                 };
             }
 
@@ -135,7 +133,6 @@ function matchApp() {
             }, { passive: true });
         },
 
-        // მიკროფონის ჩართვა/გამორთვის ფუნქცია
         toggleListening() {
             if (!this.recognition) {
                 alert("თქვენი ბრაუზერი არ უჭერს მხარს ხმოვან შეყვანას.");
@@ -240,7 +237,6 @@ function matchApp() {
         },
 
         addPlayerToSetup() {
-            // თუ მიკროფონი ჩართულია, დამატების ღილაკზე დაჭერისას ვთიშავთ
             if (this.isListening && this.recognition) {
                 this.recognition.stop();
                 this.isListening = false;
@@ -301,8 +297,37 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
+        // ===============================================
+        // ახალი: ჭკვიანი ფილტრები მოედნის და სკამის მოთამაშეებისთვის
+        // ===============================================
+        getCurrentFieldPlayers(teamStr) {
+            if (!this.match || !this.match.events) return [];
+            let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
+            if (!players) return [];
+            
+            return players.filter(p => {
+                let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
+                let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
+                // ფეხბურთელი მოედანზეა თუ: იყო სასტარტოში და არ გასულა შეცვლაზე, ან იყო სკამზე და შემოვიდა
+                return (p.status === 'starting' && !subbedOut) || (p.status === 'sub' && subbedIn);
+            }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
+        },
+
+        getCurrentBenchPlayers(teamStr) {
+            if (!this.match || !this.match.events) return [];
+            let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
+            if (!players) return [];
+            
+            return players.filter(p => {
+                let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
+                let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
+                // ფეხბურთელი სკამზეა/გასულია თუ: სასტარტოში იყო და გავიდა, ან სკამზე იყო და არ შემოსულა
+                return (p.status === 'starting' && subbedOut) || (p.status === 'sub' && !subbedIn);
+            }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
+        },
+
         getPlayerState(teamStr, num) {
-            if (!this.match.events) return 'active';
+            if (!this.match || !this.match.events) return 'active';
             let hasRed = this.match.events.some(e => e.team === teamStr && e.type === 'red' && e.playerNum == num);
             if (hasRed) return 'red_carded';
             let isSubbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == num);
@@ -333,16 +358,8 @@ function matchApp() {
         },
 
         recordTeamEvent() {
-            this.match.events.unshift({ 
-                id: Date.now() + Math.random(), 
-                type: this.modal.type, 
-                team: this.modal.team, 
-                playerNum: null, 
-                playerName: null, 
-                time: this.formatTime(this.match.timer) 
-            });
-            this.modal.open = false; 
-            this.saveState();
+            this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: null, playerName: null, time: this.formatTime(this.match.timer) });
+            this.modal.open = false; this.saveState();
         },
 
         recordSubstitution() {
