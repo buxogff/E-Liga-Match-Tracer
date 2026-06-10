@@ -189,24 +189,67 @@
                     <button @click="refereeSetupModal.open = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 transition">&times;</button>
                 </div>
                 <div class="space-y-3 pt-2">
-                    <template x-for="r in [
-                        { key: 'main', label: 'მთავარი მსაჯი' },
-                        { key: 'assistant1', label: 'ასისტენტი 1' },
-                        { key: 'assistant2', label: 'ასისტენტი 2' },
-                        { key: 'fourth', label: 'მეოთხე მსაჯი' },
-                        { key: 'var', label: 'VAR' },
-                        { key: 'avar', label: 'AVAR' }
-                    ]">
-                        <div>
-                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1" x-text="r.label"></label>
-                            <div class="relative w-full shadow-sm">
-                                <input type="text" x-model="setup.referees[r.key]" :placeholder="r.label" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
-                                <button @click="toggleListening(r.key)" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === r.key ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
-                                    <i class="fa-solid fa-microphone"></i>
-                                </button>
-                            </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მთავარი მსაჯი</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.main" placeholder="მთავარი მსაჯი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('main')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'main' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
                         </div>
-                    </template>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 1</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.assistant1" placeholder="ასისტენტი 1" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('assistant1')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'assistant1' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 2</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.assistant2" placeholder="ასისტენტი 2" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('assistant2')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'assistant2' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მეოთხე მსაჯი</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.fourth" placeholder="მეოთხე მსაჯი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('fourth')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'fourth' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">VAR</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.var" placeholder="VAR" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('var')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'var' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">AVAR</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.avar" placeholder="AVAR" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('avar')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'avar' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
                 <button @click="refereeSetupModal.open = false" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase mt-4 hover:opacity-90 transition shadow-lg">შენახვა</button>
             </div>
@@ -544,12 +587,14 @@
                                     <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                         <div class="flex py-1 items-start justify-between">
                                             <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
                                     <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                         <div class="flex py-1 items-start justify-between text-gray-500">
                                             <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
@@ -563,12 +608,14 @@
                                     <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                         <div class="flex py-1 items-start justify-between">
                                             <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span><span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
                                     <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
                                         <div class="flex py-1 items-start justify-between text-gray-500">
                                             <div class="flex items-start min-w-0 pr-1"><span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span><span class="font-medium break-words whitespace-normal" x-text="p.name"></span></div>
+                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
