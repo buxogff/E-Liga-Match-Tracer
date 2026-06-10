@@ -125,8 +125,6 @@
                         <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Starting XI</button>
                         <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Substitute</button>
                     </div>
-                    
-                    <!-- განახლებული შეყვანის ველები მიკროფონით -->
                     <div class="flex gap-2">
                         <input type="tel" x-model="setup.playerNum" placeholder="No." class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta">
                         <div class="relative w-3/4">
@@ -136,7 +134,6 @@
                             </button>
                         </div>
                     </div>
-                    
                     <button @click="addPlayerToSetup()" class="w-full bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                 </div>
                 <div class="space-y-5">
@@ -320,9 +317,7 @@
                 <template x-for="live in liveMatches" :key="live.id">
                     <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
                         <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
-                        
                         <button x-show="role === 'manager'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
-
                         <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
                         <div class="flex justify-between items-center text-center">
                             <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
@@ -334,9 +329,7 @@
 
                 <template x-for="(h, index) in history">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
-                        
                         <button x-show="role === 'manager'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                        
                         <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
                         <div class="flex justify-between items-center">
                             <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
@@ -480,7 +473,7 @@
                         <div class="space-y-2">
                             <p class="text-[9px] font-black text-red-500 uppercase bg-red-50 py-1 px-2 rounded-md inline-block border border-red-100 tracking-widest">Out (Field)</p>
                             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
-                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                <template x-for="p in getCurrentFieldPlayers(modal.team)" :key="p.id">
                                     <button 
                                         :disabled="getPlayerState(modal.team, p.num) !== 'active'"
                                         @click="modal.playerOut = p" 
@@ -497,14 +490,15 @@
                         <div class="space-y-2 border-t pt-3">
                             <p class="text-[9px] font-black text-green-600 uppercase bg-green-50 py-1 px-2 rounded-md inline-block border border-green-100 tracking-widest">In (Bench)</p>
                             <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
-                                <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'sub').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
+                                <template x-for="p in getCurrentBenchPlayers(modal.team)" :key="p.id">
                                     <button 
-                                        :disabled="getPlayerState(modal.team, p.num) === 'red_carded'"
+                                        :disabled="getPlayerState(modal.team, p.num) !== 'active'"
                                         @click="modal.playerIn = p" 
                                         :class="{
                                             'bg-green-500 text-white shadow-md border-green-600': modal.playerIn?.id === p.id,
                                             'bg-red-100 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded',
-                                            'bg-white border-gray-200 text-gray-600 hover:bg-green-500 hover:text-white': getPlayerState(modal.team, p.num) !== 'red_carded' && modal.playerIn?.id !== p.id
+                                            'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out',
+                                            'bg-white border-gray-200 text-gray-600 hover:bg-green-500 hover:text-white': getPlayerState(modal.team, p.num) === 'active' && modal.playerIn?.id !== p.id
                                         }" 
                                         class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
                                 </template>
@@ -523,18 +517,38 @@
                 </template>
 
                 <template x-if="!['sub', 'corner', 'offside'].includes(modal.type)">
-                    <div class="max-h-64 overflow-y-auto grid grid-cols-2 gap-2 p-1 pt-2">
-                        <template x-for="p in (modal.team === 'home' ? match.homePlayers : match.awayPlayers).filter(x => x.status === 'starting').slice().sort((a,b) => parseInt(a.num) - parseInt(b.num))">
-                            <button 
-                                :disabled="getPlayerState(modal.team, p.num) !== 'active'"
-                                @click="recordStandardEvent(p)" 
-                                :class="{
-                                    'bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded',
-                                    'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out',
-                                    'bg-white border-gray-200 text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95': getPlayerState(modal.team, p.num) === 'active'
-                                }"
-                                class="p-4 border rounded-xl text-xs font-black text-left transition shadow-sm truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
-                        </template>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <p class="text-[9px] font-black text-green-600 uppercase bg-green-50 py-1 px-2 rounded-md inline-block border border-green-100 tracking-widest">Field (მოედანი)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentFieldPlayers(modal.team)" :key="p.id">
+                                    <button 
+                                        :disabled="getPlayerState(modal.team, p.num) === 'red_carded'"
+                                        @click="recordStandardEvent(p)" 
+                                        :class="{
+                                            'bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded',
+                                            'bg-white border-gray-200 text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95': getPlayerState(modal.team, p.num) !== 'red_carded'
+                                        }"
+                                        class="p-4 border rounded-xl text-xs font-black text-left transition shadow-sm truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-2 border-t pt-3">
+                            <p class="text-[9px] font-black text-gray-500 uppercase bg-gray-100 py-1 px-2 rounded-md inline-block border border-gray-200 tracking-widest">Bench (სათადარიგო)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentBenchPlayers(modal.team)" :key="p.id">
+                                    <button 
+                                        :disabled="getPlayerState(modal.team, p.num) === 'subbed_out' || getPlayerState(modal.team, p.num) === 'red_carded'"
+                                        @click="recordStandardEvent(p)" 
+                                        :class="{
+                                            'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out',
+                                            'bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded',
+                                            'bg-white border-gray-200 text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95': getPlayerState(modal.team, p.num) === 'active'
+                                        }"
+                                        class="p-4 border rounded-xl text-xs font-black text-left transition shadow-sm truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </template>
             </div>
