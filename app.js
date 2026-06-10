@@ -89,7 +89,28 @@ function matchApp() {
                 this.recognition.interimResults = false;
                 
                 this.recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
+                    let transcript = event.results[0][0].transcript;
+                    
+                    // ფონეტიკური ფილტრი: ლათინური ტექსტის იძულებითი გაქართულება
+                    const digraphs = {
+                        'sh': 'შ', 'ch': 'ჩ', 'zh': 'ჟ', 'dz': 'ძ', 'ts': 'ც', 'gh': 'ღ', 'kh': 'ხ',
+                        'Sh': 'შ', 'Ch': 'ჩ', 'Zh': 'ჟ', 'Dz': 'ძ', 'Ts': 'ც', 'Gh': 'ღ', 'Kh': 'ხ',
+                        'SH': 'შ', 'CH': 'ჩ', 'ZH': 'ჟ', 'DZ': 'ძ', 'TS': 'ც', 'GH': 'ღ', 'KH': 'ხ'
+                    };
+                    const chars = {
+                        'a': 'ა', 'b': 'ბ', 'c': 'ც', 'd': 'დ', 'e': 'ე', 'f': 'ფ', 'g': 'გ', 'h': 'ჰ', 'i': 'ი', 'j': 'ჯ', 'k': 'კ', 'l': 'ლ', 'm': 'მ', 'n': 'ნ', 'o': 'ო', 'p': 'პ', 'q': 'ქ', 'r': 'რ', 's': 'ს', 't': 'ტ', 'u': 'უ', 'v': 'ვ', 'w': 'ვ', 'x': 'ხ', 'y': 'ი', 'z': 'ზ',
+                        'A': 'ა', 'B': 'ბ', 'C': 'ც', 'D': 'დ', 'E': 'ე', 'F': 'ფ', 'G': 'გ', 'H': 'ჰ', 'I': 'ი', 'J': 'ჯ', 'K': 'კ', 'L': 'ლ', 'M': 'მ', 'N': 'ნ', 'O': 'ო', 'P': 'პ', 'Q': 'ქ', 'R': 'რ', 'S': 'ს', 'T': 'ტ', 'U': 'უ', 'V': 'ვ', 'W': 'ვ', 'X': 'ხ', 'Y': 'ი', 'Z': 'ზ'
+                    };
+
+                    // ჯერ ვცვლით ორმაგ ბგერებს (მაგ: sh -> შ)
+                    for (let key in digraphs) {
+                        transcript = transcript.split(key).join(digraphs[key]);
+                    }
+                    // შემდეგ ვცვლით დარჩენილ ცალკეულ ასოებს
+                    for (let key in chars) {
+                        transcript = transcript.split(key).join(chars[key]);
+                    }
+
                     this.setup.playerName = transcript; 
                 };
                 
@@ -297,9 +318,6 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
-        // ===============================================
-        // ახალი: ჭკვიანი ფილტრები მოედნის და სკამის მოთამაშეებისთვის
-        // ===============================================
         getCurrentFieldPlayers(teamStr) {
             if (!this.match || !this.match.events) return [];
             let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
@@ -308,7 +326,6 @@ function matchApp() {
             return players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
-                // ფეხბურთელი მოედანზეა თუ: იყო სასტარტოში და არ გასულა შეცვლაზე, ან იყო სკამზე და შემოვიდა
                 return (p.status === 'starting' && !subbedOut) || (p.status === 'sub' && subbedIn);
             }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
         },
@@ -321,7 +338,6 @@ function matchApp() {
             return players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
-                // ფეხბურთელი სკამზეა/გასულია თუ: სასტარტოში იყო და გავიდა, ან სკამზე იყო და არ შემოსულა
                 return (p.status === 'starting' && subbedOut) || (p.status === 'sub' && !subbedIn);
             }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
         },
