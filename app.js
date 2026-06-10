@@ -118,7 +118,6 @@ function matchApp() {
                     for (let key in digraphs) { transcript = transcript.split(key).join(digraphs[key]); }
                     for (let key in chars) { transcript = transcript.split(key).join(chars[key]); }
 
-                    // გასწორებული სახელების დამთხვევა
                     if (this.listeningTarget === 'playerName') this.setup.playerName = transcript;
                     else if (this.listeningTarget === 'homeCoach') this.setup.homeCoach = transcript;
                     else if (this.listeningTarget === 'awayCoach') this.setup.awayCoach = transcript;
