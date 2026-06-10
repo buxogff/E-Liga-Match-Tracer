@@ -29,15 +29,31 @@ function matchApp() {
         firebaseLiveMatch: null, 
         currentLiveMatchId: null,
 
+        // ხმოვანი შეყვანისთვის განახლებული ცვლადები
         isListening: false,
         recognition: null,
+        listeningTarget: null, // ინახავს იმ ველის სახელს, რომელსაც მიკროფონი უსმენს
 
-        setup: { activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], playerStatus: 'starting', playerNum: '', playerName: '' },
-        match: { homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null },
+        setup: { 
+            activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], 
+            playerStatus: 'starting', playerNum: '', playerName: '',
+            homeCoach: '', awayCoach: '',
+            referees: { main: '', assistant1: '', assistant2: '', fourth: '', var: '', avar: '' }
+        },
+        match: { 
+            homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, 
+            homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null,
+            homeCoach: '', awayCoach: '', referees: {}
+        },
+        
         modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
         timeModal: { open: false, min: 0, sec: 0, editEventIndex: -1 },
         scoreModal: { open: false, team: '', val: 0 },
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
+        
+        // ახალი მოდალების სტატუსები
+        refereeSetupModal: { open: false },
+        lineupModal: { open: false },
 
         init() {
             if (this.role === 'manager') this.view = 'home';
@@ -91,7 +107,6 @@ function matchApp() {
                 this.recognition.onresult = (event) => {
                     let transcript = event.results[0][0].transcript;
                     
-                    // ფონეტიკური ფილტრი: ლათინური ტექსტის იძულებითი გაქართულება
                     const digraphs = {
                         'sh': 'შ', 'ch': 'ჩ', 'zh': 'ჟ', 'dz': 'ძ', 'ts': 'ც', 'gh': 'ღ', 'kh': 'ხ',
                         'Sh': 'შ', 'Ch': 'ჩ', 'Zh': 'ჟ', 'Dz': 'ძ', 'Ts': 'ც', 'Gh': 'ღ', 'Kh': 'ხ',
@@ -102,25 +117,30 @@ function matchApp() {
                         'A': 'ა', 'B': 'ბ', 'C': 'ც', 'D': 'დ', 'E': 'ე', 'F': 'ფ', 'G': 'გ', 'H': 'ჰ', 'I': 'ი', 'J': 'ჯ', 'K': 'კ', 'L': 'ლ', 'M': 'მ', 'N': 'ნ', 'O': 'ო', 'P': 'პ', 'Q': 'ქ', 'R': 'რ', 'S': 'ს', 'T': 'ტ', 'U': 'უ', 'V': 'ვ', 'W': 'ვ', 'X': 'ხ', 'Y': 'ი', 'Z': 'ზ'
                     };
 
-                    // ჯერ ვცვლით ორმაგ ბგერებს (მაგ: sh -> შ)
-                    for (let key in digraphs) {
-                        transcript = transcript.split(key).join(digraphs[key]);
-                    }
-                    // შემდეგ ვცვლით დარჩენილ ცალკეულ ასოებს
-                    for (let key in chars) {
-                        transcript = transcript.split(key).join(chars[key]);
-                    }
+                    for (let key in digraphs) { transcript = transcript.split(key).join(digraphs[key]); }
+                    for (let key in chars) { transcript = transcript.split(key).join(chars[key]); }
 
-                    this.setup.playerName = transcript; 
+                    // დინამიურად ივსება ის ველი, რომელმაც მოითხოვა მოსმენა
+                    if (this.listeningTarget === 'playerName') this.setup.playerName = transcript;
+                    else if (this.listeningTarget === 'homeCoach') this.setup.homeCoach = transcript;
+                    else if (this.listeningTarget === 'awayCoach') this.setup.awayCoach = transcript;
+                    else if (this.listeningTarget === 'refMain') this.setup.referees.main = transcript;
+                    else if (this.listeningTarget === 'refAs1') this.setup.referees.assistant1 = transcript;
+                    else if (this.listeningTarget === 'refAs2') this.setup.referees.assistant2 = transcript;
+                    else if (this.listeningTarget === 'ref4th') this.setup.referees.fourth = transcript;
+                    else if (this.listeningTarget === 'refVar') this.setup.referees.var = transcript;
+                    else if (this.listeningTarget === 'refAvar') this.setup.referees.avar = transcript;
                 };
                 
                 this.recognition.onerror = (event) => {
                     console.error("Speech recognition error", event.error);
                     this.isListening = false;
+                    this.listeningTarget = null;
                 };
                 
                 this.recognition.onend = () => {
                     this.isListening = false; 
+                    this.listeningTarget = null;
                 };
             }
 
@@ -154,14 +174,19 @@ function matchApp() {
             }, { passive: true });
         },
 
-        toggleListening() {
+        // მიკროფონის დინამიური ფუნქცია (იღებს ველის სახელს)
+        toggleListening(target) {
             if (!this.recognition) {
                 alert("თქვენი ბრაუზერი არ უჭერს მხარს ხმოვან შეყვანას.");
                 return;
             }
-            if (this.isListening) {
+            if (this.isListening && this.listeningTarget === target) {
                 this.recognition.stop();
+                this.isListening = false;
+                this.listeningTarget = null;
             } else {
+                if (this.isListening) this.recognition.stop(); 
+                this.listeningTarget = target;
                 try {
                     this.recognition.start();
                     this.isListening = true;
@@ -176,6 +201,8 @@ function matchApp() {
             if (this.timeModal.open) { this.timeModal.open = false; return; }
             if (this.scoreModal.open) { this.scoreModal.open = false; return; }
             if (this.editModal.open) { this.editModal.open = false; return; }
+            if (this.refereeSetupModal.open) { this.refereeSetupModal.open = false; return; }
+            if (this.lineupModal.open) { this.lineupModal.open = false; return; }
 
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
@@ -258,9 +285,10 @@ function matchApp() {
         },
 
         addPlayerToSetup() {
-            if (this.isListening && this.recognition) {
+            if (this.isListening && this.listeningTarget === 'playerName') {
                 this.recognition.stop();
                 this.isListening = false;
+                this.listeningTarget = null;
             }
 
             if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') return; 
@@ -282,10 +310,17 @@ function matchApp() {
         startMatch() {
             this.matchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             localStorage.setItem('activeMatchId', this.matchId);
+            
             this.match.homeName = this.setup.homeName || 'Home'; 
             this.match.awayName = this.setup.awayName || 'Away';
             this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
             this.match.awayPlayers = JSON.parse(JSON.stringify(this.setup.awayPlayers));
+            
+            // ახალი მონაცემების გადატანა ლაივ ობიექტში
+            this.match.homeCoach = this.setup.homeCoach;
+            this.match.awayCoach = this.setup.awayCoach;
+            this.match.referees = JSON.parse(JSON.stringify(this.setup.referees));
+
             this.match.scoreHome = 0; this.match.scoreAway = 0; this.match.events = []; 
             this.match.timer = 0; this.match.isPaused = true; this.match.lastTick = Date.now();
             this.view = 'live'; this.saveState();
@@ -433,7 +468,10 @@ function matchApp() {
                 scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway,
                 homePlayers: JSON.parse(JSON.stringify(this.match.homePlayers)),
                 awayPlayers: JSON.parse(JSON.stringify(this.match.awayPlayers)),
-                events: JSON.parse(JSON.stringify(this.match.events))
+                events: JSON.parse(JSON.stringify(this.match.events)),
+                homeCoach: this.match.homeCoach,
+                awayCoach: this.match.awayCoach,
+                referees: JSON.parse(JSON.stringify(this.match.referees))
             };
 
             db.collection("matches").add(reportData).then(() => {
