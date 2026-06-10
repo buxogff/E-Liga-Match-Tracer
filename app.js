@@ -29,10 +29,9 @@ function matchApp() {
         firebaseLiveMatch: null, 
         currentLiveMatchId: null,
 
-        // ხმოვანი შეყვანისთვის განახლებული ცვლადები
         isListening: false,
         recognition: null,
-        listeningTarget: null, // ინახავს იმ ველის სახელს, რომელსაც მიკროფონი უსმენს
+        listeningTarget: null, 
 
         setup: { 
             activeTab: 'home', homeName: '', awayName: '', homePlayers: [], awayPlayers: [], 
@@ -51,7 +50,6 @@ function matchApp() {
         scoreModal: { open: false, team: '', val: 0 },
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
         
-        // ახალი მოდალების სტატუსები
         refereeSetupModal: { open: false },
         lineupModal: { open: false },
 
@@ -120,16 +118,16 @@ function matchApp() {
                     for (let key in digraphs) { transcript = transcript.split(key).join(digraphs[key]); }
                     for (let key in chars) { transcript = transcript.split(key).join(chars[key]); }
 
-                    // დინამიურად ივსება ის ველი, რომელმაც მოითხოვა მოსმენა
+                    // გასწორებული სახელების დამთხვევა
                     if (this.listeningTarget === 'playerName') this.setup.playerName = transcript;
                     else if (this.listeningTarget === 'homeCoach') this.setup.homeCoach = transcript;
                     else if (this.listeningTarget === 'awayCoach') this.setup.awayCoach = transcript;
-                    else if (this.listeningTarget === 'refMain') this.setup.referees.main = transcript;
-                    else if (this.listeningTarget === 'refAs1') this.setup.referees.assistant1 = transcript;
-                    else if (this.listeningTarget === 'refAs2') this.setup.referees.assistant2 = transcript;
-                    else if (this.listeningTarget === 'ref4th') this.setup.referees.fourth = transcript;
-                    else if (this.listeningTarget === 'refVar') this.setup.referees.var = transcript;
-                    else if (this.listeningTarget === 'refAvar') this.setup.referees.avar = transcript;
+                    else if (this.listeningTarget === 'main') this.setup.referees.main = transcript;
+                    else if (this.listeningTarget === 'assistant1') this.setup.referees.assistant1 = transcript;
+                    else if (this.listeningTarget === 'assistant2') this.setup.referees.assistant2 = transcript;
+                    else if (this.listeningTarget === 'fourth') this.setup.referees.fourth = transcript;
+                    else if (this.listeningTarget === 'var') this.setup.referees.var = transcript;
+                    else if (this.listeningTarget === 'avar') this.setup.referees.avar = transcript;
                 };
                 
                 this.recognition.onerror = (event) => {
@@ -174,7 +172,6 @@ function matchApp() {
             }, { passive: true });
         },
 
-        // მიკროფონის დინამიური ფუნქცია (იღებს ველის სახელს)
         toggleListening(target) {
             if (!this.recognition) {
                 alert("თქვენი ბრაუზერი არ უჭერს მხარს ხმოვან შეყვანას.");
@@ -316,7 +313,6 @@ function matchApp() {
             this.match.homePlayers = JSON.parse(JSON.stringify(this.setup.homePlayers));
             this.match.awayPlayers = JSON.parse(JSON.stringify(this.setup.awayPlayers));
             
-            // ახალი მონაცემების გადატანა ლაივ ობიექტში
             this.match.homeCoach = this.setup.homeCoach;
             this.match.awayCoach = this.setup.awayCoach;
             this.match.referees = JSON.parse(JSON.stringify(this.setup.referees));
