@@ -82,7 +82,7 @@
                     <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain">
                 </div>
                 <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
-                <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2">მენეჯერის პანელი</p>
+                <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2" x-text="role === 'superadmin' ? 'SUPER ADMIN PANEL' : 'მენეჯერის პანელი'"></p>
             </div>
             
             <div class="w-full space-y-4 relative z-10 mt-12">
