@@ -56,6 +56,7 @@ function matchApp() {
         init() {
             if (this.role === 'manager') this.view = 'home';
             else if (this.role === 'referee') this.view = 'referee_home';
+            else if (this.role === 'superadmin') this.view = 'history'; // სუპერ ადმინი შედის პირდაპირ ისტორიაში
             else if (this.role === 'guest') this.view = 'history';
             else this.view = 'landing';
 
@@ -202,13 +203,16 @@ function matchApp() {
 
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
-                if (this.role === 'guest') this.logout();
+                if (this.role === 'guest' || this.role === 'superadmin') this.logout();
                 else this.view = 'home';
             }
             else if (this.view === 'report') this.view = 'history';
             else if (this.view === 'guest_live') this.view = 'history';
             else if (this.view === 'login') this.view = 'landing';
-            else if (this.view === 'live') this.view = 'home'; 
+            else if (this.view === 'live') {
+                // სუპერ ადმინი ლაივიდან უკან გამოსვლისას ბრუნდება ისტორიაში
+                this.view = (this.role === 'superadmin') ? 'history' : 'home';
+            }
         },
 
         submitLogin() {
@@ -219,6 +223,9 @@ function matchApp() {
                 this.role = 'manager'; localStorage.setItem('userRole', 'manager'); this.view = 'home';
             } else if (u === 'referee' && p === 'referee2026') {
                 this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home';
+            } else if (u === 'superadmin' && p === 'super2026') {
+                // სუპერ ადმინის ლოგინი
+                this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'history';
             } else {
                 alert("არასწორი მომხმარებელი ან პაროლი!");
             }
@@ -235,9 +242,26 @@ function matchApp() {
         },
 
         watchLiveMatch(liveMatchId) {
-            this.currentLiveMatchId = liveMatchId;
-            this.firebaseLiveMatch = this.liveMatches.find(m => m.id === liveMatchId);
-            this.view = 'guest_live';
+            const found = this.liveMatches.find(m => m.id === liveMatchId);
+            if (!found) return;
+
+            if (this.role === 'superadmin') {
+                if (confirm('გსურთ ამ მატჩის მართვაში ჩართვა? (Cancel-ზე დაჭერით მხოლოდ სტუმრის რეჟიმში ნახავთ)')) {
+                    this.matchId = liveMatchId;
+                    this.match = JSON.parse(JSON.stringify(found));
+                    this.saveState(); 
+                    this.view = 'live';
+                    if (!this.match.isPaused) this.startInterval();
+                } else {
+                    this.currentLiveMatchId = liveMatchId;
+                    this.firebaseLiveMatch = found;
+                    this.view = 'guest_live';
+                }
+            } else {
+                this.currentLiveMatchId = liveMatchId;
+                this.firebaseLiveMatch = found;
+                this.view = 'guest_live';
+            }
         },
 
         deleteLiveMatch(id) {
