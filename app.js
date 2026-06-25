@@ -56,7 +56,7 @@ function matchApp() {
         init() {
             if (this.role === 'manager') this.view = 'home';
             else if (this.role === 'referee') this.view = 'referee_home';
-            else if (this.role === 'superadmin') this.view = 'history'; // სუპერ ადმინი შედის პირდაპირ ისტორიაში
+            else if (this.role === 'superadmin') this.view = 'home'; // სუპერ ადმინიც მთავარ ეკრანზე შედის
             else if (this.role === 'guest') this.view = 'history';
             else this.view = 'landing';
 
@@ -203,16 +203,13 @@ function matchApp() {
 
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
-                if (this.role === 'guest' || this.role === 'superadmin') this.logout();
-                else this.view = 'home';
+                if (this.role === 'guest') this.logout();
+                else this.view = 'home'; // მენეჯერიც და სუპერ ადმინიც ბრუნდება Home-ზე
             }
             else if (this.view === 'report') this.view = 'history';
             else if (this.view === 'guest_live') this.view = 'history';
             else if (this.view === 'login') this.view = 'landing';
-            else if (this.view === 'live') {
-                // სუპერ ადმინი ლაივიდან უკან გამოსვლისას ბრუნდება ისტორიაში
-                this.view = (this.role === 'superadmin') ? 'history' : 'home';
-            }
+            else if (this.view === 'live') this.view = 'home'; 
         },
 
         submitLogin() {
@@ -224,8 +221,8 @@ function matchApp() {
             } else if (u === 'referee' && p === 'referee2026') {
                 this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home';
             } else if (u === 'superadmin' && p === 'super2026') {
-                // სუპერ ადმინის ლოგინი
-                this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'history';
+                // სუპერ ადმინი შედის მთავარ Home ეკრანზე
+                this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'home';
             } else {
                 alert("არასწორი მომხმარებელი ან პაროლი!");
             }
