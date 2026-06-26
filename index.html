@@ -103,7 +103,6 @@
             <p class="text-gray-500 text-sm mt-2">ინსტრუმენტები დაემატება შემდეგ ეტაპზე...</p>
         </div>
 
-        <!-- SETUP VIEW -->
         <div x-show="view === 'setup'" x-cloak class="p-6 pt-8 space-y-6 overflow-y-auto h-[100dvh] bg-white">
             <div class="flex items-center space-x-4 border-b pb-4">
                 <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -173,7 +172,7 @@
                                             <span x-show="p.isCaptain" class="ml-1.5 text-[8px] font-black bg-slate-800 text-white px-1 py-0.5 rounded">C</span>
                                         </div>
                                         <div class="flex items-center space-x-1">
-                                            <button @click="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100">C</button>
+                                            <button @click="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600 transition">C</button>
                                             <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
                                         </div>
                                     </div>
@@ -191,7 +190,6 @@
             </div>
         </div>
 
-        <!-- REFEREE SETUP MODAL -->
         <div x-show="refereeSetupModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto" @click.away="refereeSetupModal.open = false">
                 <div class="flex justify-between items-center border-b pb-3">
@@ -199,7 +197,6 @@
                     <button @click="refereeSetupModal.open = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 transition">&times;</button>
                 </div>
                 <div class="space-y-3 pt-2">
-                    
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მთავარი მსაჯი</label>
                         <div class="relative w-full shadow-sm">
@@ -209,7 +206,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 1</label>
                         <div class="relative w-full shadow-sm">
@@ -219,7 +215,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 2</label>
                         <div class="relative w-full shadow-sm">
@@ -229,7 +224,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მეოთხე მსაჯი</label>
                         <div class="relative w-full shadow-sm">
@@ -239,7 +233,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">VAR</label>
                         <div class="relative w-full shadow-sm">
@@ -249,7 +242,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">AVAR</label>
                         <div class="relative w-full shadow-sm">
@@ -259,13 +251,11 @@
                             </button>
                         </div>
                     </div>
-
                 </div>
                 <button @click="refereeSetupModal.open = false" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase mt-4 hover:opacity-90 transition shadow-lg">შენახვა</button>
             </div>
         </div>
 
-        <!-- LIVE MANAGEMENT SCREEN -->
         <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white transition z-10"><i class="fa-solid fa-house text-xl"></i></button>
@@ -440,7 +430,7 @@
                             <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="view === 'guest_live' ? firebaseLiveMatch?.homeName : match.homeName"></h4>
                             <div class="text-[10px] space-y-1">
                                 <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                <template x-for="p in (view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers)?.filter(x => x.status === 'starting').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers), 'starting')">
                                     <div class="flex py-1 items-start min-w-0 pr-1">
                                         <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
                                         <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
@@ -449,7 +439,7 @@
                                     </div>
                                 </template>
                                 <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                <template x-for="p in (view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers)?.filter(x => x.status === 'sub').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers), 'sub')">
                                     <div class="flex py-1 items-start min-w-0 pr-1 text-gray-500">
                                         <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
                                         <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
@@ -466,7 +456,7 @@
                             <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="view === 'guest_live' ? firebaseLiveMatch?.awayName : match.awayName"></h4>
                             <div class="text-[10px] space-y-1">
                                 <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                <template x-for="p in (view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers)?.filter(x => x.status === 'starting').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers), 'starting')">
                                     <div class="flex py-1 items-start min-w-0 pr-1">
                                         <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
                                         <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
@@ -475,7 +465,7 @@
                                     </div>
                                 </template>
                                 <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                <template x-for="p in (view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers)?.filter(x => x.status === 'sub').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers), 'sub')">
                                     <div class="flex py-1 items-start min-w-0 pr-1 text-gray-500">
                                         <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
                                         <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
@@ -563,6 +553,7 @@
                         <div class="text-sm font-black text-gray-300 mx-2">VS</div>
                         <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
                     </div>
+                    
                     <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
                         <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
                             <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.homeName + ' GOALS'"></h4>
@@ -579,6 +570,7 @@
                             <div x-show="!currentReport?.stats?.away?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
                         </div>
                     </div>
+                    
                     <div class="mb-6">
                         <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Statistics</h3>
                         <table class="w-full text-sm">
@@ -602,8 +594,8 @@
                                     <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span></template>
                                     <template x-if="ev.type === 'sub'">
                                         <div class="flex flex-col space-y-1 ml-1 w-full">
-                                            <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">Out: <strong x-text="'#'+ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></strong></span></span>
-                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal">In: <strong x-text="'#'+ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></strong></span></span>
+                                            <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
                                         </div>
                                     </template>
                                 </div>
@@ -618,7 +610,7 @@
                                 <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.homeName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                    <template x-for="p in getSortedPlayers(currentReport?.homePlayers, 'starting')">
                                         <div class="flex py-1 items-start justify-between">
                                             <div class="flex items-start min-w-0 pr-1">
                                                 <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
@@ -626,11 +618,11 @@
                                                 <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
                                                 <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
                                             </div>
-                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
+                                            <template x-if="(currentReport?.stats?.home?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                    <template x-for="p in currentReport?.homePlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                    <template x-for="p in getSortedPlayers(currentReport?.homePlayers, 'sub')">
                                         <div class="flex py-1 items-start justify-between text-gray-500">
                                             <div class="flex items-start min-w-0 pr-1">
                                                 <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
@@ -638,7 +630,7 @@
                                                 <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
                                                 <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
                                             </div>
-                                            <template x-if="currentReport?.stats?.home?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
+                                            <template x-if="(currentReport?.stats?.home?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
@@ -649,7 +641,7 @@
                                 <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.awayName"></h4>
                                 <div class="text-[10px] space-y-1">
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
-                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'starting').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                    <template x-for="p in getSortedPlayers(currentReport?.awayPlayers, 'starting')">
                                         <div class="flex py-1 items-start justify-between">
                                             <div class="flex items-start min-w-0 pr-1">
                                                 <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
@@ -657,11 +649,11 @@
                                                 <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
                                                 <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
                                             </div>
-                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
+                                            <template x-if="(currentReport?.stats?.away?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
-                                    <template x-for="p in currentReport?.awayPlayers?.filter(x => x.status === 'sub').slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                                    <template x-for="p in getSortedPlayers(currentReport?.awayPlayers, 'sub')">
                                         <div class="flex py-1 items-start justify-between text-gray-500">
                                             <div class="flex items-start min-w-0 pr-1">
                                                 <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
@@ -669,7 +661,7 @@
                                                 <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
                                                 <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
                                             </div>
-                                            <template x-if="currentReport?.stats?.away?.goals?.some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
+                                            <template x-if="(currentReport?.stats?.away?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
                                         </div>
                                     </template>
                                     <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
@@ -720,7 +712,7 @@
                                             'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out',
                                             'bg-white border-gray-200 text-gray-600 hover:bg-magenta hover:text-white': getPlayerState(modal.team, p.num) === 'active' && modal.playerOut?.id !== p.id
                                         }" 
-                                        class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
+                                        class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
                                 </template>
                             </div>
                         </div>
@@ -737,7 +729,7 @@
                                             'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out',
                                             'bg-white border-gray-200 text-gray-600 hover:bg-green-500 hover:text-white': getPlayerState(modal.team, p.num) === 'active' && modal.playerIn?.id !== p.id
                                         }" 
-                                        class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '')"></button>
+                                        class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
                                 </template>
                             </div>
                         </div>
@@ -834,12 +826,14 @@
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
                         <select x-model="editModal.min" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                     <div class="flex-1">
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წამი</label>
                         <select x-model="editModal.sec" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
-                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></select>
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
                     </div>
                 </div>
                 <div>
@@ -853,7 +847,10 @@
                     <div>
                         <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">მოთამაშე</label>
                         <select x-model="editModal.playerNum" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-800 appearance-none">
-                            <template x-for="p in (editModal.team === 'home' ? match.homePlayers : match.awayPlayers).slice().sort((a,b) => { if(a.isGK && !b.isGK) return -1; if(!a.isGK && b.isGK) return 1; return parseInt(a.num) - parseInt(b.num); })">
+                            <template x-for="p in getSortedPlayers((editModal.team === 'home' ? match.homePlayers : match.awayPlayers), 'starting')">
+                                <option :value="p.num" x-text="'#' + p.num + (p.name ? ' ' + p.name : '')"></option>
+                            </template>
+                            <template x-for="p in getSortedPlayers((editModal.team === 'home' ? match.homePlayers : match.awayPlayers), 'sub')">
                                 <option :value="p.num" x-text="'#' + p.num + (p.name ? ' ' + p.name : '')"></option>
                             </template>
                         </select>
