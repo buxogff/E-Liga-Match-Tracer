@@ -49,6 +49,7 @@ function matchApp() {
         timeModal: { open: false, min: 0, sec: 0, editEventIndex: -1 },
         scoreModal: { open: false, team: '', val: 0 },
         editModal: { open: false, index: -1, type: '', team: '', playerNum: '', min: 0, sec: 0 },
+        livePlayerEditModal: { open: false, team: '', id: null, num: '', name: '' },
         
         refereeSetupModal: { open: false },
         lineupModal: { open: false },
@@ -67,7 +68,6 @@ function matchApp() {
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
             });
 
-            // ლაივის სინქრონიზაცია და ციმციმის აცილება
             db.collection("live_matches").onSnapshot((snapshot) => {
                 this.liveMatches = [];
                 snapshot.forEach((doc) => {
@@ -82,7 +82,6 @@ function matchApp() {
                     this.liveMatches.push(data);
                 });
                 
-                // სუპერ ადმინის და მენეჯერის ეკრანების სინქრონიზაცია
                 if (this.view === 'live' && this.matchId) {
                     const found = this.liveMatches.find(m => m.id === this.matchId);
                     if (found) {
@@ -100,6 +99,14 @@ function matchApp() {
                             this.match.timer = found.timer;
                             this.match.lastTick = found.lastTick;
                         }
+                    } else if (this.hasActiveMatch) {
+                        // სინქრონული დასრულება: თუ სხვა მომხმარებელმა მატჩი დაასრულა/წაშალა ბაზიდან
+                        alert("მატჩი დასრულდა ან წაიშალა სხვა მომხმარებლის მიერ!");
+                        localStorage.removeItem('activeMatch');
+                        localStorage.removeItem('activeMatchId');
+                        this.matchId = null;
+                        this.hasActiveMatch = false;
+                        this.view = 'history';
                     }
                 }
                 
@@ -110,7 +117,6 @@ function matchApp() {
                 }
             });
 
-            // ლოკალური ჭკვიანი წამზომი (არანაირი ციმციმი)
             setInterval(() => {
                 this.liveMatches.forEach(m => {
                     if (!m.isPaused && m.lastTick) {
@@ -142,7 +148,6 @@ function matchApp() {
                 
                 this.recognition.onresult = (event) => {
                     let transcript = event.results[0][0].transcript;
-                    
                     const digraphs = {
                         'sh': 'შ', 'ch': 'ჩ', 'zh': 'ჟ', 'dz': 'ძ', 'ts': 'ც', 'gh': 'ღ', 'kh': 'ხ',
                         'Sh': 'შ', 'Ch': 'ჩ', 'Zh': 'ჟ', 'Dz': 'ძ', 'Ts': 'ც', 'Gh': 'ღ', 'Kh': 'ხ',
@@ -167,15 +172,8 @@ function matchApp() {
                     else if (this.listeningTarget === 'avar') this.setup.referees.avar = transcript;
                 };
                 
-                this.recognition.onerror = (event) => {
-                    this.isListening = false;
-                    this.listeningTarget = null;
-                };
-                
-                this.recognition.onend = () => {
-                    this.isListening = false; 
-                    this.listeningTarget = null;
-                };
+                this.recognition.onerror = () => { this.isListening = false; this.listeningTarget = null; };
+                this.recognition.onend = () => { this.isListening = false; this.listeningTarget = null; };
             }
         },
 
@@ -197,6 +195,7 @@ function matchApp() {
             if (this.editModal.open) { this.editModal.open = false; return; }
             if (this.refereeSetupModal.open) { this.refereeSetupModal.open = false; return; }
             if (this.lineupModal.open) { this.lineupModal.open = false; return; }
+            if (this.livePlayerEditModal.open) { this.livePlayerEditModal.open = false; return; }
 
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
@@ -214,16 +213,10 @@ function matchApp() {
         submitLogin() {
             let u = this.loginUsername.trim().toLowerCase();
             let p = this.loginPassword.trim();
-
-            if (u === 'manager' && p === 'eliga2026') {
-                this.role = 'manager'; localStorage.setItem('userRole', 'manager'); this.view = 'home';
-            } else if (u === 'referee' && p === 'referee2026') {
-                this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home';
-            } else if (u === 'superadmin' && p === 'super2026') {
-                this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'home';
-            } else {
-                alert("არასწორი მომხმარებელი ან პაროლი!");
-            }
+            if (u === 'manager' && p === 'eliga2026') { this.role = 'manager'; localStorage.setItem('userRole', 'manager'); this.view = 'home'; }
+            else if (u === 'referee' && p === 'referee2026') { this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home'; }
+            else if (u === 'superadmin' && p === 'super2026') { this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'home'; }
+            else { alert("არასწორი მომხმარებელი ან პაროლი!"); }
             this.loginUsername = ''; this.loginPassword = '';
         },
 
@@ -277,7 +270,6 @@ function matchApp() {
             if (saved) { this.match = saved; this.view = 'live'; }
         },
 
-        // დაცული სორტირების ფუნქცია: მეკარე ყოველთვის პირველია!
         getSortedPlayers(players, status) {
             if (!players || !Array.isArray(players)) return [];
             return players.filter(x => x.status === status).sort((a, b) => {
@@ -291,11 +283,9 @@ function matchApp() {
             if (this.isListening && this.listeningTarget === 'playerName') {
                 this.recognition.stop(); this.isListening = false; this.listeningTarget = null;
             }
-
             if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') return; 
             
             let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
-            // ავტომატური მეკარის მინიჭება, თუ სიაში ჯერ არავინაა
             let hasGKWithStatus = currentList.some(p => p.status === this.setup.playerStatus && p.isGK);
 
             const newPlayer = { 
@@ -357,11 +347,39 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
+        // ავტომატური სორტირება დროის მიხედვით ზრდადობით (ბოლო დამატებული ყველაზე მაღლა)
+        sortEvents() {
+            if (!this.match || !this.match.events) return;
+            this.match.events.sort((a, b) => {
+                let timeA = a.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
+                let timeB = b.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
+                return timeB - timeA;
+            });
+        },
+
+        // ლაივ გრაფიკის ფუნქცია
+        getLiveStat(teamStr, typeStr) {
+            let evs = this.match?.events || this.firebaseLiveMatch?.events;
+            if (!evs) return 0;
+            return evs.filter(e => e.team === teamStr && e.type === typeStr).length;
+        },
+
+        // ლაინ-აფის ისრები
+        isSubbedIn(p, teamStr) {
+            let evs = this.match?.events || this.firebaseLiveMatch?.events;
+            if(!evs) return false;
+            return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
+        },
+        isSubbedOut(p, teamStr) {
+            let evs = this.match?.events || this.firebaseLiveMatch?.events;
+            if(!evs) return false;
+            return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
+        },
+
         getCurrentFieldPlayers(teamStr) {
             if (!this.match || !this.match.events) return [];
             let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             if (!players || !Array.isArray(players)) return [];
-            
             let filtered = players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
@@ -378,7 +396,6 @@ function matchApp() {
             if (!this.match || !this.match.events) return [];
             let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             if (!players || !Array.isArray(players)) return [];
-            
             let filtered = players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
@@ -413,12 +430,12 @@ function matchApp() {
             } else if (this.modal.type === 'own_goal') {
                 if (this.modal.team === 'home') this.match.scoreAway++; else this.match.scoreHome++;
             }
-            this.modal.open = false; this.saveState();
+            this.sortEvents(); this.modal.open = false; this.saveState();
         },
 
         recordTeamEvent() {
             this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: null, playerName: null, time: this.formatTime(this.match.displayTimer || this.match.timer) });
-            this.modal.open = false; this.saveState();
+            this.sortEvents(); this.modal.open = false; this.saveState();
         },
 
         recordSubstitution() {
@@ -426,7 +443,7 @@ function matchApp() {
             const pOut = list.find(x => x.id === this.modal.playerOut.id);
             const pIn = list.find(x => x.id === this.modal.playerIn.id);
             this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.displayTimer || this.match.timer) });
-            this.modal.open = false; this.saveState();
+            this.sortEvents(); this.modal.open = false; this.saveState();
         },
         
         openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor((this.match.displayTimer || this.match.timer) / 60); this.timeModal.sec = (this.match.displayTimer || this.match.timer) % 60; this.timeModal.open = true; },
@@ -441,6 +458,7 @@ function matchApp() {
                 if (!this.match.isPaused) this.match.lastTick = Date.now();
             } else {
                 this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime);
+                this.sortEvents();
             }
             this.timeModal.open = false; this.saveState();
         },
@@ -464,7 +482,25 @@ function matchApp() {
                 let p = list.find(x => x.num == this.editModal.playerNum);
                 if(p) { ev.playerNum = p.num; ev.playerName = p.name; }
             }
-            this.editModal.open = false; this.saveState();
+            this.sortEvents(); this.editModal.open = false; this.saveState();
+        },
+
+        // ეკრანიდან ლაინ-აფის რედაქტირება
+        openLivePlayerEdit(team, p) {
+            this.livePlayerEditModal.team = team;
+            this.livePlayerEditModal.id = p.id;
+            this.livePlayerEditModal.num = p.num;
+            this.livePlayerEditModal.name = p.name;
+            this.livePlayerEditModal.open = true;
+        },
+        saveLivePlayerEdit() {
+            let list = this.livePlayerEditModal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
+            let p = list.find(x => x.id === this.livePlayerEditModal.id);
+            if (p) {
+                p.num = this.livePlayerEditModal.num.toString();
+                p.name = this.livePlayerEditModal.name.toString();
+            }
+            this.livePlayerEditModal.open = false; this.saveState();
         },
 
         finishMatch() {
@@ -472,9 +508,6 @@ function matchApp() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
             let dateStr = new Date().toLocaleString('ka-GE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
             
-            let finalTimer = this.match.timer;
-            if (!this.match.isPaused && this.match.lastTick) finalTimer += Math.floor((Date.now() - this.match.lastTick) / 1000);
-
             let reportData = {
                 timestamp: Date.now(), date: dateStr, homeName: this.match.homeName, awayName: this.match.awayName, 
                 scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway,
@@ -490,6 +523,31 @@ function matchApp() {
                 localStorage.removeItem('activeMatch'); localStorage.removeItem('activeMatchId');
                 this.matchId = null; this.hasActiveMatch = false; this.view = 'history';
             }).catch(() => { alert("შეცდომა! შეამოწმეთ ინტერნეტი."); });
+        },
+
+        // სუპერ ადმინისთვის უკან ლაივში დაბრუნების ფუნქცია
+        revertToLive(reportId) {
+            let report = this.history.find(h => h.id === reportId);
+            if(!report) return;
+            if(confirm('ნამდვილად გსურთ მატჩის ლაივ რეჟიმში დაბრუნება? (ეს წაშლის რაპორტს ისტორიიდან)')) {
+                let liveData = JSON.parse(JSON.stringify(report));
+                delete liveData.id;
+                liveData.isPaused = true;
+                liveData.lastTick = null;
+                liveData.displayTimer = liveData.timer || 0;
+                
+                this.matchId = 'match_' + Date.now();
+                localStorage.setItem('activeMatchId', this.matchId);
+                
+                db.collection("matches").doc(reportId).delete().then(() => {
+                    db.collection("live_matches").doc(this.matchId).set(liveData).then(() => {
+                        this.match = liveData;
+                        this.hasActiveMatch = true;
+                        localStorage.setItem('activeMatch', JSON.stringify(liveData));
+                        this.view = 'live';
+                    });
+                });
+            }
         },
 
         viewReport(index) {
