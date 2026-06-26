@@ -41,8 +41,8 @@ function matchApp() {
         },
         match: { 
             homeName: '', awayName: '', scoreHome: 0, scoreAway: 0, 
-            homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null, timerInterval: null,
-            homeCoach: '', awayCoach: '', referees: {}
+            homePlayers: [], awayPlayers: [], events: [], timer: 0, isPaused: true, lastTick: null,
+            homeCoach: '', awayCoach: '', referees: {}, displayTimer: 0
         },
         
         modal: { open: false, type: '', team: 'home', playerOut: null, playerIn: null },
@@ -56,7 +56,6 @@ function matchApp() {
         init() {
             if (this.role === 'manager') this.view = 'home';
             else if (this.role === 'referee') this.view = 'referee_home';
-            else if (this.role === 'superadmin') this.view = 'home'; // სუპერ ადმინიც მთავარ ეკრანზე შედის
             else if (this.role === 'guest') this.view = 'history';
             else this.view = 'landing';
 
@@ -67,14 +66,42 @@ function matchApp() {
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
             });
 
+            // სინქრონიზაციის და ციმციმის პრობლემის მოგვარება რეალურ დროში
             db.collection("live_matches").onSnapshot((snapshot) => {
                 this.liveMatches = [];
                 snapshot.forEach((doc) => {
                     let data = doc.data();
                     data.id = doc.id;
-                    data.displayTimer = data.timer;
+                    
+                    if (!data.isPaused && data.lastTick) {
+                        let diff = Math.floor((Date.now() - data.lastTick) / 1000);
+                        data.displayTimer = data.timer + diff;
+                    } else {
+                        data.displayTimer = data.timer;
+                    }
                     this.liveMatches.push(data);
                 });
+                
+                // აქტიური მატჩის სინქრონიზაცია მენეჯერსა და სუპერ ადმინს შორის
+                if (this.view === 'live' && this.matchId) {
+                    const found = this.liveMatches.find(m => m.id === this.matchId);
+                    if (found) {
+                        this.match.scoreHome = found.scoreHome;
+                        this.match.scoreAway = found.scoreAway;
+                        this.match.events = found.events;
+                        this.match.homePlayers = found.homePlayers;
+                        this.match.awayPlayers = found.awayPlayers;
+                        this.match.homeCoach = found.homeCoach;
+                        this.match.awayCoach = found.awayCoach;
+                        this.match.referees = found.referees;
+                        
+                        if (this.match.isPaused !== found.isPaused || Math.abs(this.match.timer - found.timer) > 2) {
+                            this.match.isPaused = found.isPaused;
+                            this.match.timer = found.timer;
+                            this.match.lastTick = found.lastTick;
+                        }
+                    }
+                }
                 
                 if (this.view === 'guest_live' && this.currentLiveMatchId) {
                     const found = this.liveMatches.find(m => m.id === this.currentLiveMatchId);
@@ -83,17 +110,35 @@ function matchApp() {
                 }
             });
 
+            // ლოკალური წამზომის ტაიმერი ციმციმის გარეშე
             setInterval(() => {
                 this.liveMatches.forEach(m => {
                     if (!m.isPaused && m.lastTick) {
-                        let now = Date.now();
-                        let diff = Math.floor((now - m.lastTick) / 1000);
-                        let currentTimer = m.timer + diff;
-                        if (currentTimer >= 2700 && m.timer < 2700) currentTimer = 2700;
-                        if (currentTimer >= 5400 && m.timer < 5400) currentTimer = 5400;
-                        m.displayTimer = currentTimer;
+                        let diff = Math.floor((Date.now() - m.lastTick) / 1000);
+                        m.displayTimer = m.timer + diff;
                     } else { m.displayTimer = m.timer; }
                 });
+                
+                if (this.view === 'live' && this.match && !this.match.isPaused && this.match.lastTick) {
+                    let diff = Math.floor((Date.now() - this.match.lastTick) / 1000);
+                    let currentTimer = this.match.timer + diff;
+                    if (currentTimer >= 2700 && this.match.timer < 2700) {
+                        currentTimer = 2700;
+                        this.match.isPaused = true;
+                        this.match.timer = 2700;
+                        this.match.lastTick = null;
+                        this.saveState();
+                    } else if (currentTimer >= 5400 && this.match.timer < 5400) {
+                        currentTimer = 5400;
+                        this.match.isPaused = true;
+                        this.match.timer = 5400;
+                        this.match.lastTick = null;
+                        this.saveState();
+                    }
+                    this.match.displayTimer = currentTimer;
+                } else if (this.match) {
+                    this.match.displayTimer = this.match.timer;
+                }
             }, 1000);
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -204,7 +249,7 @@ function matchApp() {
             if (this.view === 'setup') this.view = 'home';
             else if (this.view === 'history') {
                 if (this.role === 'guest') this.logout();
-                else this.view = 'home'; // მენეჯერიც და სუპერ ადმინიც ბრუნდება Home-ზე
+                else this.view = 'home';
             }
             else if (this.view === 'report') this.view = 'history';
             else if (this.view === 'guest_live') this.view = 'history';
@@ -221,7 +266,6 @@ function matchApp() {
             } else if (u === 'referee' && p === 'referee2026') {
                 this.role = 'referee'; localStorage.setItem('userRole', 'referee'); this.view = 'referee_home';
             } else if (u === 'superadmin' && p === 'super2026') {
-                // სუპერ ადმინი შედის მთავარ Home ეკრანზე
                 this.role = 'superadmin'; localStorage.setItem('userRole', 'superadmin'); this.view = 'home';
             } else {
                 alert("არასწორი მომხმარებელი ან პაროლი!");
@@ -248,7 +292,6 @@ function matchApp() {
                     this.match = JSON.parse(JSON.stringify(found));
                     this.saveState(); 
                     this.view = 'live';
-                    if (!this.match.isPaused) this.startInterval();
                 } else {
                     this.currentLiveMatchId = liveMatchId;
                     this.firebaseLiveMatch = found;
@@ -288,17 +331,18 @@ function matchApp() {
             if (saved) {
                 this.match = saved;
                 this.view = 'live';
-                if (!this.match.isPaused) {
-                    let now = Date.now();
-                    let diff = Math.floor((now - this.match.lastTick) / 1000);
-                    let newTimer = this.match.timer + diff;
-                    if (this.match.timer < 2700 && newTimer >= 2700) { this.match.timer = 2700; this.match.isPaused = true; } 
-                    else if (this.match.timer < 5400 && newTimer >= 5400) { this.match.timer = 5400; this.match.isPaused = true; } 
-                    else { this.match.timer = newTimer; }
-                    this.match.lastTick = now;
-                    if (!this.match.isPaused) this.startInterval();
-                }
             }
+        },
+
+        // მოთამაშეების სორტირება: მეკარე სათავეში, დანარჩენი ნომრებით
+        getSortedPlayers(players, status) {
+            if (!players) return [];
+            let filtered = players.filter(x => x.status === status);
+            return filtered.sort((a, b) => {
+                if (a.isGK && !b.isGK) return -1;
+                if (!a.isGK && b.isGK) return 1;
+                return parseInt(a.num) - parseInt(b.num);
+            });
         },
 
         addPlayerToSetup() {
@@ -309,14 +353,33 @@ function matchApp() {
             }
 
             if (!this.setup.playerNum || this.setup.playerNum.toString().trim() === '') return; 
-            const newPlayer = { id: Date.now(), num: this.setup.playerNum.toString(), name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', status: this.setup.playerStatus };
+            
+            let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
+            // ავტომატური მეკარის მინიჭება პირველ მოთამაშეებზე
+            let hasGKWithStatus = currentList.some(p => p.status === this.setup.playerStatus && p.isGK);
+
+            const newPlayer = { 
+                id: Date.now(), 
+                num: this.setup.playerNum.toString(), 
+                name: this.setup.playerName ? this.setup.playerName.toString().trim() : '', 
+                status: this.setup.playerStatus,
+                isGK: !hasGKWithStatus,
+                isCaptain: false
+            };
+            
             if (this.setup.activeTab === 'home') this.setup.homePlayers = [...this.setup.homePlayers, newPlayer];
             else this.setup.awayPlayers = [...this.setup.awayPlayers, newPlayer];
             
-            let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
             let startersCount = currentList.filter(x => x.status === 'starting').length;
             if (this.setup.playerStatus === 'starting' && startersCount >= 11) { this.setup.playerStatus = 'sub'; }
             this.setup.playerNum = ''; this.setup.playerName = '';
+        },
+
+        setCaptain(player) {
+            let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
+            currentList.forEach(p => {
+                p.isCaptain = (p.id === player.id);
+            });
         },
 
         removePlayerFromSetup(id) {
@@ -338,47 +401,40 @@ function matchApp() {
             this.match.referees = JSON.parse(JSON.stringify(this.setup.referees));
 
             this.match.scoreHome = 0; this.match.scoreAway = 0; this.match.events = []; 
-            this.match.timer = 0; this.match.isPaused = true; this.match.lastTick = Date.now();
+            this.match.timer = 0; this.match.isPaused = true; this.match.lastTick = null;
             this.view = 'live'; this.saveState();
-        },
-
-        startInterval() {
-            if (this.match.timerInterval) clearInterval(this.match.timerInterval);
-            this.match.lastTick = Date.now();
-            this.match.timerInterval = setInterval(() => {
-                let now = Date.now();
-                let diff = Math.floor((now - this.match.lastTick) / 1000);
-                if (diff > 0) {
-                    let newTimer = this.match.timer + diff;
-                    let autoPaused = false;
-                    if (this.match.timer < 2700 && newTimer >= 2700) { newTimer = 2700; autoPaused = true; } 
-                    else if (this.match.timer < 5400 && newTimer >= 5400) { newTimer = 5400; autoPaused = true; }
-                    this.match.timer = newTimer;
-                    this.match.lastTick = now - ((now - this.match.lastTick) % 1000);
-                    if (autoPaused) { this.match.isPaused = true; clearInterval(this.match.timerInterval); this.match.timerInterval = null; }
-                    this.saveState();
-                }
-            }, 1000);
         },
 
         toggleTimer() {
             this.match.isPaused = !this.match.isPaused;
-            if (!this.match.isPaused) { this.startInterval(); } 
-            else { if (this.match.timerInterval) { clearInterval(this.match.timerInterval); this.match.timerInterval = null; } }
+            if (!this.match.isPaused) {
+                this.match.lastTick = Date.now();
+            } else {
+                if (this.match.lastTick) {
+                    let diff = Math.floor((Date.now() - this.match.lastTick) / 1000);
+                    this.match.timer += diff;
+                }
+                this.match.lastTick = null;
+            }
             this.saveState();
         },
-        formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
         getCurrentFieldPlayers(teamStr) {
             if (!this.match || !this.match.events) return [];
             let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             if (!players) return [];
             
-            return players.filter(p => {
+            let filtered = players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
                 return (p.status === 'starting' && !subbedOut) || (p.status === 'sub' && subbedIn);
-            }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
+            });
+
+            return filtered.sort((a, b) => {
+                if (a.isGK && !b.isGK) return -1;
+                if (!a.isGK && b.isGK) return 1;
+                return parseInt(a.num) - parseInt(b.num);
+            });
         },
 
         getCurrentBenchPlayers(teamStr) {
@@ -386,11 +442,17 @@ function matchApp() {
             let players = teamStr === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             if (!players) return [];
             
-            return players.filter(p => {
+            let filtered = players.filter(p => {
                 let subbedOut = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
                 let subbedIn = this.match.events.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
                 return (p.status === 'starting' && subbedOut) || (p.status === 'sub' && !subbedIn);
-            }).sort((a,b) => parseInt(a.num) - parseInt(b.num));
+            });
+
+            return filtered.sort((a, b) => {
+                if (a.isGK && !b.isGK) return -1;
+                if (!a.isGK && b.isGK) return 1;
+                return parseInt(a.num) - parseInt(b.num);
+            });
         },
 
         getPlayerState(teamStr, num) {
@@ -413,7 +475,7 @@ function matchApp() {
                 }
             }
 
-            this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.timer) });
+            this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: p.num, playerName: p.name, time: this.formatTime(this.match.displayTimer || this.match.timer) });
             
             if (this.modal.type === 'goal' || this.modal.type === 'penalty') {
                 if (this.modal.team === 'home') this.match.scoreHome++; else this.match.scoreAway++;
@@ -425,7 +487,7 @@ function matchApp() {
         },
 
         recordTeamEvent() {
-            this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: null, playerName: null, time: this.formatTime(this.match.timer) });
+            this.match.events.unshift({ id: Date.now() + Math.random(), type: this.modal.type, team: this.modal.team, playerNum: null, playerName: null, time: this.formatTime(this.match.displayTimer || this.match.timer) });
             this.modal.open = false; this.saveState();
         },
 
@@ -433,19 +495,25 @@ function matchApp() {
             const list = this.modal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
             const pOut = list.find(x => x.id === this.modal.playerOut.id);
             const pIn = list.find(x => x.id === this.modal.playerIn.id);
-            this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.timer) });
+            this.match.events.unshift({ id: Date.now() + Math.random(), type: 'sub', team: this.modal.team, playerOut: pOut, playerIn: pIn, time: this.formatTime(this.match.displayTimer || this.match.timer) });
             this.modal.open = false; this.saveState();
         },
         
-        openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor(this.match.timer / 60); this.timeModal.sec = this.match.timer % 60; this.timeModal.open = true; },
+        openTimeEdit() { this.timeModal.editEventIndex = -1; this.timeModal.min = Math.floor((this.match.displayTimer || this.match.timer) / 60); this.timeModal.sec = (this.match.displayTimer || this.match.timer) % 60; this.timeModal.open = true; },
         openTimeEditOnly(index) {
             let ev = this.match.events[index]; let tParts = ev.time.split(':');
             this.timeModal.editEventIndex = index; this.timeModal.min = parseInt(tParts[0]); this.timeModal.sec = parseInt(tParts[1]); this.timeModal.open = true;
         },
         saveTimeEdit() {
             let newTime = parseInt(this.timeModal.min) * 60 + parseInt(this.timeModal.sec);
-            if (this.timeModal.editEventIndex === -1) { this.match.timer = newTime; this.match.lastTick = Date.now(); } 
-            else { this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime); }
+            if (this.timeModal.editEventIndex === -1) {
+                this.match.timer = newTime;
+                if (!this.match.isPaused) {
+                    this.match.lastTick = Date.now();
+                }
+            } else {
+                this.match.events[this.timeModal.editEventIndex].time = this.formatTime(newTime);
+            }
             this.timeModal.open = false; this.saveState();
         },
         openScoreEdit(team) { this.scoreModal.team = team; this.scoreModal.val = team === 'home' ? this.match.scoreHome : this.match.scoreAway; this.scoreModal.open = true; },
@@ -479,6 +547,11 @@ function matchApp() {
             if (this.match.timerInterval) clearInterval(this.match.timerInterval);
             let dateStr = new Date().toLocaleString('ka-GE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
             
+            let finalTimer = this.match.timer;
+            if (!this.match.isPaused && this.match.lastTick) {
+                finalTimer += Math.floor((Date.now() - this.match.lastTick) / 1000);
+            }
+
             let reportData = {
                 timestamp: Date.now(), date: dateStr, homeName: this.match.homeName, awayName: this.match.awayName, 
                 scoreHome: this.match.scoreHome, scoreAway: this.match.scoreAway,
