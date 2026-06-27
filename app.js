@@ -76,7 +76,7 @@ function matchApp() {
                             this.match.isPaused = found.isPaused; this.match.timer = found.timer; this.match.lastTick = found.lastTick;
                         }
                     } else if (this.hasActiveMatch) {
-                        alert("მატჩი დასრულდა ან წაიშალა სხვა მომხმარებლის (სუპერ ადმინის/მენეჯერის) მიერ!");
+                        alert("მატჩი დასრულდა ან წაიშალა სხვა მომხმარებლის მიერ!");
                         localStorage.removeItem('activeMatch'); localStorage.removeItem('activeMatchId');
                         this.matchId = null; this.hasActiveMatch = false; this.view = 'history';
                     }
@@ -144,18 +144,24 @@ function matchApp() {
             }
         },
 
+        // OCR ფუნქცია ქართული ენისთვის გასწორებული კოდით (kat)
         async processOCR(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             this.isScanning = true;
             try {
-                const worker = await Tesseract.createWorker('geo');
+                // ქართული ენის კოდი არის 'kat'
+                const worker = await Tesseract.createWorker('kat');
                 const ret = await worker.recognize(file);
                 await worker.terminate();
+                
                 const text = ret.data.text;
                 const lines = text.split('\n');
                 let parsedPlayers = [];
+                // ეძებს რიცხვს და მის შემდეგ სიტყვებს
                 const regex = /(?:^|\s)(\d+)\s+([A-Za-zა-ჰ\s\.-]+)/; 
+                
                 for (let line of lines) {
                     let match = line.match(regex);
                     if (match) {
@@ -164,8 +170,10 @@ function matchApp() {
                         if (num && name.length > 2) parsedPlayers.push({ num, name });
                     }
                 }
-                if (parsedPlayers.length === 0) alert("ტექსტი ან ნომრები ვერ ამოვიცანი.");
-                else {
+                
+                if (parsedPlayers.length === 0) {
+                    alert("ტექსტი ან ნომრები ვერ ამოვიცანი. სცადეთ უფრო ნათელი სურათი.");
+                } else {
                     let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
                     parsedPlayers.forEach((p) => {
                         let hasGKWithStatus = currentList.some(pl => pl.status === this.setup.playerStatus && pl.isGK);
@@ -175,11 +183,17 @@ function matchApp() {
                         };
                         currentList.push(newPlayer);
                     });
+                    
                     let startersCount = currentList.filter(x => x.status === 'starting').length;
                     if (this.setup.playerStatus === 'starting' && startersCount >= 11) this.setup.playerStatus = 'sub';
                 }
-            } catch (error) { alert("სკანირებისას დაფიქსირდა შეცდომა."); } 
-            finally { this.isScanning = false; event.target.value = ''; }
+            } catch (error) { 
+                console.error(error);
+                alert("სკანირებისას დაფიქსირდა შეცდომა."); 
+            } finally { 
+                this.isScanning = false; 
+                event.target.value = ''; 
+            }
         },
 
         goBack() {
@@ -291,7 +305,7 @@ function matchApp() {
         },
 
         openSetupPlayerEdit(team, p) {
-            if(!p.id) p.id = Date.now() + Math.random(); // ძველი ობიექტების დაცვა
+            if(!p.id) p.id = Date.now() + Math.random(); 
             this.setupPlayerEditModal.team = team; this.setupPlayerEditModal.id = p.id;
             this.setupPlayerEditModal.num = p.num; this.setupPlayerEditModal.name = p.name;
             this.setupPlayerEditModal.open = true;
@@ -463,7 +477,7 @@ function matchApp() {
         },
 
         openLivePlayerEdit(team, p) {
-            if(!p.id) p.id = Date.now() + Math.random(); // ძველი ობიექტების დაცვა
+            if(!p.id) p.id = Date.now() + Math.random(); 
             this.livePlayerEditModal.team = team; this.livePlayerEditModal.id = p.id;
             this.livePlayerEditModal.num = p.num; this.livePlayerEditModal.name = p.name;
             this.livePlayerEditModal.open = true;
