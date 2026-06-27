@@ -144,14 +144,13 @@ function matchApp() {
             }
         },
 
-        // OCR ფუნქცია ქართული ენისთვის გასწორებული კოდით (kat)
+        // გასწორებული და გაუმჯობესებული OCR ფუნქცია
         async processOCR(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             this.isScanning = true;
             try {
-                // ქართული ენის კოდი არის 'kat'
                 const worker = await Tesseract.createWorker('kat');
                 const ret = await worker.recognize(file);
                 await worker.terminate();
@@ -159,15 +158,26 @@ function matchApp() {
                 const text = ret.data.text;
                 const lines = text.split('\n');
                 let parsedPlayers = [];
-                // ეძებს რიცხვს და მის შემდეგ სიტყვებს
-                const regex = /(?:^|\s)(\d+)\s+([A-Za-zა-ჰ\s\.-]+)/; 
+                
+                // ვეძებთ ციფრს, რომელსაც მოსდევს წერტილი ან ჰარი
+                const regex = /(?:^|\s)(\d+)[.\s]+([A-Za-zა-ჰ\s\.-]+)/; 
                 
                 for (let line of lines) {
                     let match = line.match(regex);
                     if (match) {
                         let num = match[1].trim();
                         let name = match[2].trim().replace(/[^a-zA-Zა-ჰ\s\.-]/g, '').trim();
-                        if (num && name.length > 2) parsedPlayers.push({ num, name });
+                        let isCap = false;
+
+                        // კაპიტნის ამოცნობა: თუ სახელი მთავრდება 'c' ან 'ც' ასოთი
+                        if (name.toLowerCase().endsWith(' c') || name.toLowerCase().endsWith(' ც') || name.toLowerCase().endsWith(' c.') || name.toLowerCase().endsWith(' [c]')) {
+                            name = name.substring(0, name.lastIndexOf(' ')).trim();
+                            isCap = true;
+                        }
+
+                        if (num && name.length > 2) {
+                            parsedPlayers.push({ num, name, isCap });
+                        }
                     }
                 }
                 
@@ -178,8 +188,12 @@ function matchApp() {
                     parsedPlayers.forEach((p) => {
                         let hasGKWithStatus = currentList.some(pl => pl.status === this.setup.playerStatus && pl.isGK);
                         const newPlayer = {
-                            id: Date.now() + Math.random(), num: p.num.toString(), name: p.name,
-                            status: this.setup.playerStatus, isGK: !hasGKWithStatus, isCaptain: false
+                            id: Date.now() + Math.random(), 
+                            num: p.num.toString(), 
+                            name: p.name,
+                            status: this.setup.playerStatus, 
+                            isGK: !hasGKWithStatus, 
+                            isCaptain: p.isCap
                         };
                         currentList.push(newPlayer);
                     });
