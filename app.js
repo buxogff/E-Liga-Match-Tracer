@@ -144,11 +144,9 @@ function matchApp() {
             }
         },
 
-        // გასწორებული და გაუმჯობესებული OCR ფუნქცია
         async processOCR(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             this.isScanning = true;
             try {
                 const worker = await Tesseract.createWorker('kat');
@@ -158,18 +156,17 @@ function matchApp() {
                 const text = ret.data.text;
                 const lines = text.split('\n');
                 let parsedPlayers = [];
-                
-                // ვეძებთ ციფრს, რომელსაც მოსდევს წერტილი ან ჰარი
-                const regex = /(?:^|\s)(\d+)[.\s]+([A-Za-zა-ჰ\s\.-]+)/; 
+                // გაუმჯობესებული რეგექსი ფართი-ფურთების დასაჭერად
+                const regex = /(?:^|\s)(\d+)[.\s\-_:]+([A-Za-zა-ჰ\s\.-]+)/; 
                 
                 for (let line of lines) {
                     let match = line.match(regex);
                     if (match) {
                         let num = match[1].trim();
-                        let name = match[2].trim().replace(/[^a-zA-Zა-ჰ\s\.-]/g, '').trim();
+                        // ვინარჩუნებთ ჰარებს სახელებს შორის
+                        let name = match[2].replace(/[^a-zA-Zა-ჰ\s\.-]/g, '').replace(/\s+/g, ' ').trim();
                         let isCap = false;
 
-                        // კაპიტნის ამოცნობა: თუ სახელი მთავრდება 'c' ან 'ც' ასოთი
                         if (name.toLowerCase().endsWith(' c') || name.toLowerCase().endsWith(' ც') || name.toLowerCase().endsWith(' c.') || name.toLowerCase().endsWith(' [c]')) {
                             name = name.substring(0, name.lastIndexOf(' ')).trim();
                             isCap = true;
@@ -360,23 +357,24 @@ function matchApp() {
             this.match.events.sort((a, b) => {
                 let timeA = a.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
                 let timeB = b.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
-                return timeB - timeA;
+                return timeB - timeA; // უახლესი პირველად
             });
         },
 
         getLiveStat(teamStr, typeStr) {
-            let evs = this.match?.events || this.firebaseLiveMatch?.events;
-            if (!evs) return 0;
+            let evs = [];
+            if (this.view === 'live') { evs = this.match?.events || []; } 
+            else if (this.view === 'guest_live') { evs = this.firebaseLiveMatch?.events || []; }
             return evs.filter(e => e.team === teamStr && e.type === typeStr).length;
         },
 
         isSubbedIn(p, teamStr) {
-            let evs = this.match?.events || this.firebaseLiveMatch?.events;
+            let evs = this.view === 'live' ? this.match?.events : this.firebaseLiveMatch?.events;
             if(!evs) return false;
             return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
         },
         isSubbedOut(p, teamStr) {
-            let evs = this.match?.events || this.firebaseLiveMatch?.events;
+            let evs = this.view === 'live' ? this.match?.events : this.firebaseLiveMatch?.events;
             if(!evs) return false;
             return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
         },
