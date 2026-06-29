@@ -156,17 +156,18 @@ function matchApp() {
                 const text = ret.data.text;
                 const lines = text.split('\n');
                 let parsedPlayers = [];
-                // \s ემატება, რათა სახელებს შორის სფეისები არ გაქრეს
+                // გაუმჯობესებული რეგექსი: ეძებს ციფრს, წერტილს/ჰარს/ტირეს და სახელებს
                 const regex = /(?:^|\s)(\d+)[.\s\-_:]+([A-Za-zა-ჰ\s\.-]+)/; 
                 
                 for (let line of lines) {
                     let match = line.match(regex);
                     if (match) {
                         let num = match[1].trim();
-                        // ამოვიღოთ მხოლოდ ზედმეტი სიმბოლოები, სფეისები რჩება
+                        // ვინარჩუნებთ სფეისებს სახელებს შორის
                         let name = match[2].replace(/[^a-zA-Zა-ჰ\s\.-]/g, '').replace(/\s+/g, ' ').trim();
                         let isCap = false;
 
+                        // თუ C-თი მთავრდება, კაპიტანია
                         if (name.toLowerCase().endsWith(' c') || name.toLowerCase().endsWith(' ც') || name.toLowerCase().endsWith(' c.') || name.toLowerCase().endsWith(' [c]')) {
                             name = name.substring(0, name.lastIndexOf(' ')).trim();
                             isCap = true;
@@ -345,18 +346,17 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
-        // დროის მიხედვით ზრდადობით დალაგება (დაცული ლოგიკა)
+        // ავტომატური სორტირება დროის მიხედვით ზრდადობით
         sortEvents() {
             if (!this.match || !this.match.events) return;
             this.match.events.sort((a, b) => {
                 let partsA = a.time.split(':'); let partsB = b.time.split(':');
                 let tA = parseInt(partsA[0]) * 60 + parseInt(partsA[1]);
                 let tB = parseInt(partsB[0]) * 60 + parseInt(partsB[1]);
-                return tB - tA; // უახლესი დრო მაღლა
+                return tB - tA; // უახლესი პირველად
             });
         },
 
-        // გასწორებული ლაივ სტატისტიკა (guest vs live)
         getLiveStat(teamStr, typeStr) {
             let evs = (this.view === 'guest_live') ? this.firebaseLiveMatch?.events : this.match?.events;
             if (!evs) return 0;
