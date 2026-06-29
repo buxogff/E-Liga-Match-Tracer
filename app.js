@@ -156,14 +156,14 @@ function matchApp() {
                 const text = ret.data.text;
                 const lines = text.split('\n');
                 let parsedPlayers = [];
-                // გაუმჯობესებული რეგექსი ფართი-ფურთების დასაჭერად
+                // \s ემატება, რათა სახელებს შორის სფეისები არ გაქრეს
                 const regex = /(?:^|\s)(\d+)[.\s\-_:]+([A-Za-zა-ჰ\s\.-]+)/; 
                 
                 for (let line of lines) {
                     let match = line.match(regex);
                     if (match) {
                         let num = match[1].trim();
-                        // ვინარჩუნებთ ჰარებს სახელებს შორის
+                        // ამოვიღოთ მხოლოდ ზედმეტი სიმბოლოები, სფეისები რჩება
                         let name = match[2].replace(/[^a-zA-Zა-ჰ\s\.-]/g, '').replace(/\s+/g, ' ').trim();
                         let isCap = false;
 
@@ -185,25 +185,18 @@ function matchApp() {
                     parsedPlayers.forEach((p) => {
                         let hasGKWithStatus = currentList.some(pl => pl.status === this.setup.playerStatus && pl.isGK);
                         const newPlayer = {
-                            id: Date.now() + Math.random(), 
-                            num: p.num.toString(), 
-                            name: p.name,
-                            status: this.setup.playerStatus, 
-                            isGK: !hasGKWithStatus, 
-                            isCaptain: p.isCap
+                            id: Date.now() + Math.random(), num: p.num.toString(), name: p.name,
+                            status: this.setup.playerStatus, isGK: !hasGKWithStatus, isCaptain: p.isCap
                         };
                         currentList.push(newPlayer);
                     });
-                    
                     let startersCount = currentList.filter(x => x.status === 'starting').length;
                     if (this.setup.playerStatus === 'starting' && startersCount >= 11) this.setup.playerStatus = 'sub';
                 }
             } catch (error) { 
-                console.error(error);
-                alert("სკანირებისას დაფიქსირდა შეცდომა."); 
+                console.error(error); alert("სკანირებისას დაფიქსირდა შეცდომა."); 
             } finally { 
-                this.isScanning = false; 
-                event.target.value = ''; 
+                this.isScanning = false; event.target.value = ''; 
             }
         },
 
@@ -352,29 +345,31 @@ function matchApp() {
         },
         formatTime(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; },
 
+        // დროის მიხედვით ზრდადობით დალაგება (დაცული ლოგიკა)
         sortEvents() {
             if (!this.match || !this.match.events) return;
             this.match.events.sort((a, b) => {
-                let timeA = a.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
-                let timeB = b.time.split(':').reduce((m, s) => parseInt(m) * 60 + parseInt(s));
-                return timeB - timeA; // უახლესი პირველად
+                let partsA = a.time.split(':'); let partsB = b.time.split(':');
+                let tA = parseInt(partsA[0]) * 60 + parseInt(partsA[1]);
+                let tB = parseInt(partsB[0]) * 60 + parseInt(partsB[1]);
+                return tB - tA; // უახლესი დრო მაღლა
             });
         },
 
+        // გასწორებული ლაივ სტატისტიკა (guest vs live)
         getLiveStat(teamStr, typeStr) {
-            let evs = [];
-            if (this.view === 'live') { evs = this.match?.events || []; } 
-            else if (this.view === 'guest_live') { evs = this.firebaseLiveMatch?.events || []; }
+            let evs = (this.view === 'guest_live') ? this.firebaseLiveMatch?.events : this.match?.events;
+            if (!evs) return 0;
             return evs.filter(e => e.team === teamStr && e.type === typeStr).length;
         },
 
         isSubbedIn(p, teamStr) {
-            let evs = this.view === 'live' ? this.match?.events : this.firebaseLiveMatch?.events;
+            let evs = (this.view === 'guest_live') ? this.firebaseLiveMatch?.events : this.match?.events;
             if(!evs) return false;
             return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerIn.num == p.num);
         },
         isSubbedOut(p, teamStr) {
-            let evs = this.view === 'live' ? this.match?.events : this.firebaseLiveMatch?.events;
+            let evs = (this.view === 'guest_live') ? this.firebaseLiveMatch?.events : this.match?.events;
             if(!evs) return false;
             return evs.some(e => e.team === teamStr && e.type === 'sub' && e.playerOut.num == p.num);
         },
