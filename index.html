@@ -4,21 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-liga Match Management</title>
-    
     <link rel="manifest" href='data:application/json;charset=utf-8,%7B%22name%22%3A%22E-liga%20Match%20Management%22%2C%22short_name%22%3A%22E-liga%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%232e3192%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
     <meta name="theme-color" content="#2e3192">
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <link rel="stylesheet" href="style.css">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
@@ -111,13 +106,11 @@
                             <button @click="toggleListening('playerName')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'playerName' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-100'"><i class="fa-solid fa-microphone"></i></button>
                         </div>
                     </div>
-                    
                     <div class="flex gap-2 mt-2">
                         <button @click="addPlayerToSetup()" class="flex-1 bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
                         <button onclick="document.getElementById('scanInput').click()" class="w-14 bg-eliga-blue text-white rounded-xl shadow-md flex items-center justify-center hover:bg-blue-800 transition"><i class="fa-solid fa-camera"></i></button>
-                        <input type="file" id="scanInput" @change="processOCR" accept="image/*" class="hidden">
+                        <input type="file" id="scanInput" @change="processOCR" accept="image/*" capture="environment" class="hidden">
                     </div>
-                    
                     <div class="mt-4 pt-4 border-t border-gray-100">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2" x-text="setup.activeTab === 'home' ? 'Home Coach' : 'Away Coach'"></label>
                         <div x-show="setup.activeTab === 'home'" class="relative w-full">
@@ -130,7 +123,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <div class="space-y-5">
                     <template x-for="status in ['starting', 'sub']">
                         <div class="space-y-2">
@@ -141,11 +133,11 @@
                             <div class="space-y-1">
                                 <template x-for="p in getSortedPlayers((setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers), status)" :key="p.id">
                                     <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm">
-                                        <div class="flex items-center">
-                                            <strong class="mr-2 text-eliga-blue font-black" x-text="'#'+p.num"></strong>
-                                            <span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || ''"></span>
-                                            <span x-show="p.isGK" class="ml-1.5 text-[8px] font-black bg-yellow-400 text-gray-800 px-1 py-0.5 rounded">GK</span>
-                                            <span x-show="p.isCaptain" class="ml-1.5 text-[8px] font-black bg-slate-800 text-white px-1 py-0.5 rounded">C</span>
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <strong class="mr-2 text-eliga-blue font-black shrink-0" x-text="'#'+p.num"></strong>
+                                            <span class="text-gray-600 font-bold text-xs break-words whitespace-normal" x-text="p.name || ''"></span>
+                                            <span x-show="p.isGK" class="ml-1.5 text-[8px] font-black bg-yellow-400 text-gray-800 px-1 py-0.5 rounded shrink-0">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1.5 text-[8px] font-black bg-slate-800 text-white px-1 py-0.5 rounded shrink-0">C</span>
                                         </div>
                                         <div class="flex items-center space-x-1 shrink-0">
                                             <button @click="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600 transition">C</button>
@@ -158,7 +150,6 @@
                         </div>
                     </template>
                 </div>
-                
                 <button @click="refereeSetupModal.open = true" class="w-full bg-gray-100 text-eliga-blue border border-gray-200 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase mt-4 hover:bg-gray-200 transition flex items-center justify-center"><i class="fa-solid fa-whistle mr-2"></i> სამსაჯო ბრიგადა</button>
                 <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl mt-6 tracking-widest uppercase">Start Match</button>
             </div>
@@ -176,9 +167,7 @@
                         <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg cursor-pointer transition" @click="openTimeEdit()">
                             <p class="text-4xl font-black font-mono tracking-wider text-white drop-shadow-md" x-text="formatTime(match.displayTimer || match.timer)"></p>
                         </div>
-                        <button @click="toggleTimer()" class="mt-5 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transform active:scale-95 transition" :class="match.isPaused ? 'bg-white text-[#2e3192]' : 'bg-magenta text-white'">
-                            <i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i>
-                        </button>
+                        <button @click="toggleTimer()" class="mt-5 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transform active:scale-95 transition" :class="match.isPaused ? 'bg-white text-[#2e3192]' : 'bg-magenta text-white'"><i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i></button>
                     </div>
                     <div class="flex-1 min-w-0 cursor-pointer text-center" @click="openScoreEdit('away')">
                         <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md mb-1 truncate px-1" x-text="match.awayName"></p>
@@ -190,27 +179,23 @@
             <div class="px-4 pt-4 pb-2 z-10 relative shrink-0">
                 <button @click="lineupModal.open = true" class="w-full bg-white border border-gray-200 text-eliga-blue py-3 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest flex justify-center items-center hover:bg-gray-50 transition active:scale-95 mb-2"><i class="fa-solid fa-users mr-2"></i> შემადგენლობები</button>
                 <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-flag-checkered text-orange-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'offside')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'offside')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
                 <div class="grid grid-cols-4 gap-2">
                     <template x-for="type in ['goal', 'own_goal', 'penalty', 'yellow', 'red', 'corner', 'offside', 'sub']">
-                        <button @click="openEventModal(type)" class="py-3 px-1 rounded-2xl flex flex-col items-center space-y-1 text-white shadow-md transform active:scale-95 transition" :class="{
-                            'bg-green-500': type === 'goal', 'bg-orange-500': type === 'own_goal', 'bg-emerald-600': type === 'penalty', 
-                            'bg-yellow-400 text-gray-800': type === 'yellow', 'bg-red-500': type === 'red', 'bg-eliga-cyan': type === 'corner', 
-                            'bg-purple-500': type === 'offside', 'bg-eliga-blue': type === 'sub'
-                        }">
-                            <i class="fa-solid text-xl drop-shadow-sm" :class="{'fa-futbol': type === 'goal' || type === 'own_goal', 'fa-bullseye': type === 'penalty', 'fa-square': type === 'yellow' || type === 'red', 'fa-flag': type === 'corner' || type === 'offside', 'fa-arrows-rotate': type === 'sub'}"></i>
+                        <button @click="openEventModal(type)" class="py-3 px-1 rounded-2xl flex flex-col items-center space-y-1 text-white shadow-md transform active:scale-95 transition" :class="{'bg-green-500': type === 'goal', 'bg-orange-500': type === 'own_goal', 'bg-emerald-600': type === 'penalty', 'bg-yellow-400 text-gray-800': type === 'yellow', 'bg-red-500': type === 'red', 'bg-eliga-cyan': type === 'corner', 'bg-purple-500': type === 'offside', 'bg-eliga-blue': type === 'sub'}">
+                            <i class="fa-solid text-xl drop-shadow-sm" :class="{'fa-futbol': type === 'goal' || type === 'own_goal', 'fa-bullseye': type === 'penalty', 'fa-square': type === 'yellow' || type === 'red', 'fa-flag': type === 'corner', 'fa-flag-checkered': type === 'offside', 'fa-arrows-rotate': type === 'sub'}"></i>
                             <span class="text-[9px] font-black uppercase tracking-widest text-center leading-tight" x-text="type.replace('_', ' ')"></span>
                         </button>
                     </template>
                 </div>
-                
                 <div class="space-y-3 pb-24">
                     <div class="flex items-center justify-between border-b pb-2">
                         <h3 class="font-black text-gray-400 text-xs uppercase tracking-widest">Match Events</h3>
@@ -219,9 +204,7 @@
                     <template x-for="(ev, index) in match.events" :key="ev.id">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
                             <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer" @click="openTimeEditOnly(index)"><span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span></div>
-                            <div class="w-8 flex justify-center mr-2">
-                                <i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i>
-                            </div>
+                            <div class="w-8 flex justify-center mr-2"><i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag-checkered text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i></div>
                             <div class="flex-1 text-sm min-w-0 pr-2">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
                                 <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
@@ -249,43 +232,31 @@
             <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
                 <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white z-10"><i class="fa-solid fa-chevron-left text-xl"></i></button>
                 <div class="absolute top-4 right-6 bg-red-500 text-white font-black text-[9px] uppercase px-2 py-1 rounded-md animate-pulse tracking-widest"><i class="fa-solid fa-circle text-[7px] mr-1"></i> LIVE</div>
-                
                 <div class="flex items-center justify-between mt-6 relative z-10 space-x-2">
-                    <div class="flex-1 min-w-0 text-center">
-                        <p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.homeName"></p>
-                        <p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreHome || 0"></p>
-                    </div>
+                    <div class="flex-1 min-w-0 text-center"><p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.homeName"></p><p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreHome || 0"></p></div>
                     <div class="px-2 flex flex-col items-center flex-shrink-0">
-                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg">
-                            <p class="text-4xl font-black font-mono tracking-wider text-white" x-text="formatTime(firebaseLiveMatch?.displayTimer !== undefined ? firebaseLiveMatch?.displayTimer : firebaseLiveMatch?.timer)"></p>
-                        </div>
+                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg"><p class="text-4xl font-black font-mono tracking-wider text-white" x-text="formatTime(firebaseLiveMatch?.displayTimer !== undefined ? firebaseLiveMatch?.displayTimer : firebaseLiveMatch?.timer)"></p></div>
                         <p class="text-[9px] font-bold text-white/60 mt-3 uppercase tracking-wider" x-text="firebaseLiveMatch?.isPaused ? 'შეჩერებულია' : 'მიმდინარეობს'"></p>
                     </div>
-                    <div class="flex-1 min-w-0 text-center">
-                        <p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.awayName"></p>
-                        <p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreAway || 0"></p>
-                    </div>
+                    <div class="flex-1 min-w-0 text-center"><p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.awayName"></p><p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreAway || 0"></p></div>
                 </div>
             </div>
-            
             <div class="px-4 pt-4 pb-2 z-10 relative shrink-0">
                 <button @click="lineupModal.open = true" class="w-full bg-white border border-gray-200 text-eliga-blue py-3 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest flex justify-center items-center hover:bg-gray-50 transition active:scale-95 mb-2"><i class="fa-solid fa-users mr-2"></i> შემადგენლობები</button>
                 <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-flag-checkered text-orange-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'offside')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'offside')"></span></div></div>
+                    <div class="text-center flex-1 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
                 </div>
             </div>
-
             <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
                 <div class="space-y-3 pb-8">
                     <template x-for="ev in firebaseLiveMatch?.events" :key="ev.id">
                         <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
                             <div class="bg-gray-50 border rounded-lg px-3 py-2 mr-3"><span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span></div>
-                            <div class="w-8 flex justify-center mr-2">
-                                <i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i>
-                            </div>
+                            <div class="w-8 flex justify-center mr-2"><i class="fa-solid text-xl" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag-checkered text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i></div>
                             <div class="flex-1 text-sm min-w-0 pr-2">
                                 <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? firebaseLiveMatch?.homeName : firebaseLiveMatch?.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
                                 <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
@@ -304,12 +275,9 @@
 
         <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
             <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border relative">
-                <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition">
-                    <i class="fa-solid" :class="(role === 'guest' || role === 'superadmin') ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i>
-                </button>
+                <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid" :class="(role === 'guest' || role === 'superadmin') ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i></button>
                 <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider mx-auto pr-8">History</h2>
             </div>
-            
             <div class="flex-1 overflow-y-auto space-y-4">
                 <template x-for="live in liveMatches" :key="live.id">
                     <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
@@ -323,7 +291,6 @@
                         </div>
                     </div>
                 </template>
-
                 <template x-for="(h, index) in history" :key="h.id || index">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
                         <button x-show="role === 'manager' || role === 'superadmin'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
@@ -360,7 +327,6 @@
                         <div class="text-sm font-black text-gray-300 mx-2">VS</div>
                         <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
                     </div>
-                    
                     <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
                         <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
                             <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.homeName + ' GOALS'"></h4>
@@ -396,7 +362,7 @@
                             <template x-for="ev in currentReport?.events">
                                 <div class="flex items-center text-[11px] border-b border-white py-2 px-1 last:border-0">
                                     <span class="font-mono font-black text-gray-400 w-10 shrink-0" x-text="ev.time"></span>
-                                    <i class="fa-solid mx-2 text-[12px]" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i>
+                                    <i class="fa-solid mx-2 text-[12px]" :class="{'fa-futbol text-green-500': ev.type === 'goal', 'fa-futbol text-orange-500': ev.type === 'own_goal', 'fa-bullseye text-emerald-600': ev.type === 'penalty', 'fa-square text-yellow-400': ev.type === 'yellow', 'fa-square text-red-500': ev.type === 'red', 'fa-flag text-eliga-cyan': ev.type === 'corner', 'fa-flag-checkered text-purple-500': ev.type === 'offside', 'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'}"></i>
                                     <span class="font-bold text-gray-600 w-16 break-words whitespace-normal uppercase text-[9px] shrink-0" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
                                     <span class="uppercase font-black w-14 text-[9px] shrink-0" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type.replace('_', ' ')"></span>
                                     <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span></template>
@@ -493,6 +459,7 @@
                 </div>
             </div>
         </div>
+
         <div x-show="lineupModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl h-[85vh] flex flex-col" @click.away="lineupModal.open = false">
                 <div class="flex justify-between items-center border-b pb-3 shrink-0">
@@ -586,24 +553,6 @@
             </div>
         </div>
 
-        <div x-show="livePlayerEditModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-[60]">
-            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4 shadow-2xl" @click.away="livePlayerEditModal.open = false">
-                <h3 class="font-black text-lg text-center uppercase tracking-widest text-eliga-blue border-b pb-2">რედაქტირება</h3>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">ნომერი</label>
-                    <input type="tel" x-model="livePlayerEditModal.num" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black focus:outline-none focus:ring-2 ring-magenta text-gray-800">
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">სახელი და გვარი</label>
-                    <input type="text" x-model="livePlayerEditModal.name" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold focus:outline-none focus:ring-2 ring-magenta text-gray-800 text-sm">
-                </div>
-                <div class="flex space-x-2 pt-4">
-                    <button @click="livePlayerEditModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-gray-200 transition text-[11px]">გაუქმება</button>
-                    <button @click="saveLivePlayerEdit()" class="flex-1 bg-magenta text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-pink-600 transition shadow-md text-[11px]">შენახვა</button>
-                </div>
-            </div>
-        </div>
-
         <div x-show="modal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4 shadow-2xl" @click.away="modal.open = false">
                 <div class="flex justify-between items-center">
@@ -656,9 +605,7 @@
                 </template>
                 
                 <template x-if="['corner', 'offside'].includes(modal.type)">
-                    <div class="pt-4">
-                        <button @click="recordTeamEvent()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase hover:opacity-90 transition shadow-md">დადასტურება</button>
-                    </div>
+                    <div class="pt-4"><button @click="recordTeamEvent()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase hover:opacity-90 transition shadow-md">დადასტურება</button></div>
                 </template>
 
                 <template x-if="!['sub', 'corner', 'offside'].includes(modal.type)">
