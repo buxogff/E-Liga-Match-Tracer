@@ -221,9 +221,9 @@
                                             <span x-show="p.isCaptain" class="ml-1.5 text-[8px] font-black bg-slate-800 text-white px-1 py-0.5 rounded shrink-0">C</span>
                                         </div>
                                         <div class="flex items-center space-x-1 shrink-0">
-                                            <button @click="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600 transition">C</button>
-                                            <button @click="openSetupPlayerEdit(setup.activeTab, p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-blue-50 hover:text-eliga-blue text-gray-600 transition"><i class="fa-solid fa-pen"></i></button>
-                                            <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+                                            <button @click.stop="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600 transition">C</button>
+                                            <button @click.stop="openSetupPlayerEdit(setup.activeTab, p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-blue-50 hover:text-eliga-blue text-gray-600 transition"><i class="fa-solid fa-pen pointer-events-none"></i></button>
+                                            <button @click.stop="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark pointer-events-none"></i></button>
                                         </div>
                                     </div>
                                 </template>
