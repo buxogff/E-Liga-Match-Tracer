@@ -20,15 +20,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <!-- Tesseract OCR: geo + eng ენები -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
 
     <!-- სკანირების overlay -->
-    <div x-show="isScanning" class="fixed inset-0 bg-eliga-blue/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-white">
+    <div x-show="isScanning" class="fixed inset-0 bg-eliga-blue/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-white px-8">
         <i class="fa-solid fa-spinner fa-spin text-5xl mb-4 text-[#00bce4]"></i>
         <h2 class="text-xl font-black uppercase tracking-widest animate-pulse">მიმდინარეობს სკანირება...</h2>
-        <p class="text-xs mt-2 text-white/60">გთხოვთ დაელოდოთ</p>
+        <p class="text-sm mt-3 text-white/80 font-bold" x-text="scanProgress"></p>
+        <p class="text-xs mt-4 text-white/50 text-center max-w-xs">პირველი სკანირება შეიძლება ნელა მიმდინარეობდეს, რადგან იტვირთება ენის მონაცემები</p>
     </div>
 
     <!-- FIX #1: კამერის modal -->
@@ -406,10 +407,11 @@
                 </button>
                 <!-- FIX #4: სტატისტიკა - getLiveStat view-ზე დამოკიდებული -->
                 <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-flag text-orange-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'offside')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'offside')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
                 </div>
             </div>
 
@@ -512,10 +514,11 @@
                 </button>
                 <!-- FIX #5: სტატისტიკა guest_live-შიც სწორად - getLiveStat view-ს ამოწმებს -->
                 <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
-                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-flag text-orange-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'offside')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'offside')"></span></div></div>
+                    <div class="text-center w-1/5 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
                 </div>
             </div>
 
