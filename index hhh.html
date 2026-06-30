@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-liga Match Management</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2e3192">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Tesseract OCR: geo + eng ენები -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900" x-data="matchApp()" x-init="init()">
+
+    <!-- სკანირების overlay -->
+    <div x-show="isScanning" class="fixed inset-0 bg-eliga-blue/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-white">
+        <i class="fa-solid fa-spinner fa-spin text-5xl mb-4 text-[#00bce4]"></i>
+        <h2 class="text-xl font-black uppercase tracking-widest animate-pulse">მიმდინარეობს სკანირება...</h2>
+        <p class="text-xs mt-2 text-white/60">გთხოვთ დაელოდოთ</p>
+    </div>
+
+    <!-- FIX #1: კამერის modal -->
+    <div x-show="cameraModal.open" x-cloak class="fixed inset-0 bg-black z-[90] flex flex-col">
+        <div class="flex items-center justify-between p-4 bg-black/80">
+            <button @click="closeCamera()" class="text-white/70 hover:text-white flex items-center font-bold text-sm">
+                <i class="fa-solid fa-xmark text-xl mr-2"></i> გაუქმება
+            </button>
+            <p class="text-white font-black text-sm uppercase tracking-widest">სკანირება</p>
+            <div class="w-16"></div>
+        </div>
+        <div class="flex-1 relative overflow-hidden">
+            <video id="camera-video" autoplay playsinline class="w-full h-full object-cover"></video>
+            <!-- სამიზნე ჩარჩო -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="border-2 border-[#00bce4] rounded-xl w-4/5 h-1/2 relative">
+                    <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-[#e6007e] rounded-tl-lg -translate-x-0.5 -translate-y-0.5"></div>
+                    <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-[#e6007e] rounded-tr-lg translate-x-0.5 -translate-y-0.5"></div>
+                    <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-[#e6007e] rounded-bl-lg -translate-x-0.5 translate-y-0.5"></div>
+                    <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-[#e6007e] rounded-br-lg translate-x-0.5 translate-y-0.5"></div>
+                    <p class="absolute -bottom-8 left-0 right-0 text-center text-white/70 text-xs font-bold">სია ჩარჩოში მოათავსეთ</p>
+                </div>
+            </div>
+        </div>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+        <div class="p-6 bg-black/80 flex justify-center">
+            <button @click="captureAndScan()" class="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl active:scale-95 transition">
+                <div class="w-16 h-16 rounded-full bg-[#e6007e] flex items-center justify-center">
+                    <i class="fa-solid fa-camera text-white text-2xl"></i>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col">
+
+        <!-- LANDING -->
+        <div x-show="view === 'landing'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
+            <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
+            <div class="relative z-10 w-full mb-10">
+                <div class="w-24 h-24 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-6 shadow-2xl transform rotate-3">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-16 h-16 object-contain transform -rotate-3">
+                </div>
+                <h1 class="text-4xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
+                <p class="text-eliga-cyan font-bold tracking-widest text-[10px] uppercase mt-2">Match Management</p>
+            </div>
+            <div class="w-full space-y-4 relative z-10">
+                <button @click="loginAsGuest()" class="w-full bg-gray-50 border-2 border-gray-200 text-gray-600 py-4 rounded-2xl font-black text-lg shadow-sm transform active:scale-95 transition flex items-center justify-center space-x-3">
+                    <i class="fa-solid fa-user-astronaut text-xl text-eliga-cyan"></i> <span>სტუმარი</span>
+                </button>
+                <button @click="view = 'login'; loginType = 'manager'" class="w-full bg-magenta text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide flex items-center justify-center space-x-3">
+                    <i class="fa-solid fa-user-tie text-xl"></i> <span>მენეჯერი</span>
+                </button>
+                <button @click="view = 'login'; loginType = 'referee'" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center space-x-3 transform active:scale-95 transition shadow-xl">
+                    <i class="fa-solid fa-whistle text-xl text-yellow-400"></i> <span>მსაჯები</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- LOGIN -->
+        <div x-show="view === 'login'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
+            <button @click="goBack()" class="absolute top-6 left-6 text-gray-400 hover:text-magenta transition z-20 flex items-center text-sm font-bold"><i class="fa-solid fa-chevron-left mr-1"></i> უკან</button>
+            <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
+            <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
+            <div class="relative z-10 w-full mb-6">
+                <div class="w-20 h-20 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-4 shadow-2xl">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-14 h-14 object-contain">
+                </div>
+                <h1 class="text-3xl font-black text-eliga-blue uppercase tracking-tighter">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
+                <p class="text-eliga-cyan font-black tracking-widest text-[11px] uppercase mt-2 shadow-sm bg-gray-50/50 inline-block px-3 py-1 rounded-md" x-text="loginType === 'manager' ? 'მენეჯერის ავტორიზაცია' : 'მსაჯების ავტორიზაცია'"></p>
+            </div>
+            <form @submit.prevent="submitLogin()" class="w-full space-y-4 relative z-10 bg-white/60 p-6 rounded-3xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                <div>
+                    <input type="text" x-model="loginUsername" placeholder="მომხმარებელი (User)" required autocomplete="off" class="w-full p-4 bg-gray-50 border rounded-xl outline-none font-bold text-sm focus:ring-2 ring-magenta">
+                </div>
+                <div>
+                    <input type="password" x-model="loginPassword" placeholder="პაროლი (Password)" required autocomplete="off" class="w-full p-4 bg-gray-50 border rounded-xl outline-none font-bold text-sm focus:ring-2 ring-magenta">
+                </div>
+                <button type="submit" class="w-full bg-magenta text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-pink-200 transform active:scale-95 transition">შესვლა</button>
+            </form>
+        </div>
+
+        <!-- HOME -->
+        <div x-show="view === 'home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
+            <button @click="logout()" class="absolute top-6 right-6 text-red-400 hover:text-red-600 font-bold text-xs uppercase z-20 flex items-center"><i class="fa-solid fa-right-from-bracket mr-1"></i> გასვლა</button>
+            <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
+            <div class="relative z-10 space-y-4 w-full">
+                <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
+                    <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain">
+                </div>
+                <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
+                <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2" x-text="role === 'superadmin' ? 'SUPER ADMIN PANEL' : 'მენეჯერის პანელი'"></p>
+            </div>
+            <div class="w-full space-y-4 relative z-10 mt-12">
+                <button x-show="hasActiveMatch" @click="resumeMatch()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg transform active:scale-95 transition flex justify-center items-center">
+                    <i class="fa-solid fa-play mr-2"></i> გააგრძელე მატჩი
+                </button>
+                <button @click="view = 'setup'" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl shadow-pink-200 transform active:scale-95 transition tracking-wide">+ NEW MATCH</button>
+                <button @click="view = 'history'" class="w-full border-2 border-eliga-blue text-eliga-blue py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition hover:bg-blue-50">
+                    <i class="fa-solid fa-clock-rotate-left mr-2"></i> HISTORY
+                </button>
+            </div>
+        </div>
+
+        <!-- REFEREE HOME -->
+        <div x-show="view === 'referee_home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center bg-gray-50 relative">
+            <button @click="logout()" class="absolute top-6 right-6 text-red-400 font-bold text-xs uppercase"><i class="fa-solid fa-right-from-bracket"></i> გასვლა</button>
+            <i class="fa-solid fa-whistle text-6xl text-eliga-blue mb-4"></i>
+            <h2 class="text-2xl font-black uppercase text-eliga-blue">მსაჯის კაბინეტი</h2>
+            <p class="text-gray-500 text-sm mt-2">ინსტრუმენტები დაემატება შემდეგ ეტაპზე...</p>
+        </div>
+
+        <!-- SETUP -->
+        <div x-show="view === 'setup'" x-cloak class="p-6 pt-8 space-y-6 overflow-y-auto h-[100dvh] bg-white">
+            <div class="flex items-center space-x-4 border-b pb-4">
+                <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                <h2 class="text-2xl font-black text-eliga-blue uppercase tracking-wider">Match Setup</h2>
+            </div>
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Team Names</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" x-model="setup.homeName" placeholder="Home Team" class="w-full min-w-0 p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
+                        <input type="text" x-model="setup.awayName" placeholder="Away Team" class="w-full min-w-0 p-4 bg-gray-50 rounded-xl outline-none font-bold text-sm">
+                    </div>
+                </div>
+                <div class="flex p-1 bg-gray-100 rounded-xl">
+                    <button @click="setup.activeTab = 'home'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-sm uppercase truncate px-2" x-text="setup.homeName || 'Home'"></button>
+                    <button @click="setup.activeTab = 'away'; setup.playerStatus = 'starting'" :class="setup.activeTab === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-sm uppercase truncate px-2" x-text="setup.awayName || 'Away'"></button>
+                </div>
+                <div class="bg-white p-5 rounded-2xl space-y-4 border shadow-sm">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button @click="setup.playerStatus = 'starting'" :class="setup.playerStatus === 'starting' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Starting XI</button>
+                        <button @click="setup.playerStatus = 'sub'" :class="setup.playerStatus === 'sub' ? 'bg-eliga-blue text-white' : 'bg-gray-50 text-gray-500'" class="py-2.5 rounded-lg font-black text-[10px] uppercase">Substitute</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="tel" x-model="setup.playerNum" placeholder="No." class="w-1/4 min-w-0 p-3 rounded-xl border bg-gray-50 font-bold text-center outline-none focus:ring-2 ring-magenta">
+                        <div class="relative w-3/4">
+                            <input type="text" x-model="setup.playerName" placeholder="Player Name" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta">
+                            <button @click="toggleListening('playerName')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'playerName' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-100'">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- FIX #1: ორი ღილაკი - Add + კამერა + ფაილი -->
+                    <div class="flex gap-2 mt-2">
+                        <button @click="addPlayerToSetup()" class="flex-1 bg-eliga-cyan text-white py-3 rounded-xl font-black uppercase tracking-widest shadow-md hover:opacity-90 transition">+ Add Player</button>
+                        <!-- კამერით სკანირება -->
+                        <button @click="openCamera()" class="w-12 bg-eliga-blue text-white rounded-xl shadow-md flex items-center justify-center hover:bg-blue-800 transition" title="კამერით სკანირება">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                        <!-- ფაილიდან სკანირება -->
+                        <button onclick="document.getElementById('scanInput').click()" class="w-12 bg-gray-600 text-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-700 transition" title="გალერეიდან სკანირება">
+                            <i class="fa-solid fa-image"></i>
+                        </button>
+                        <input type="file" id="scanInput" @change="processOCR" accept="image/*" class="hidden">
+                    </div>
+                    
+                    <!-- Coach -->
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2" x-text="setup.activeTab === 'home' ? 'Home Coach' : 'Away Coach'"></label>
+                        <div x-show="setup.activeTab === 'home'" class="relative w-full">
+                            <input type="text" x-model="setup.homeCoach" placeholder="მთავარი მწვრთნელი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm">
+                            <button @click="toggleListening('homeCoach')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'homeCoach' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-100'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                        <div x-show="setup.activeTab === 'away'" class="relative w-full">
+                            <input type="text" x-model="setup.awayCoach" placeholder="მთავარი მწვრთნელი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm">
+                            <button @click="toggleListening('awayCoach')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'awayCoach' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-100'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Players list -->
+                <div class="space-y-5">
+                    <template x-for="status in ['starting', 'sub']">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                                <h3 class="font-black uppercase text-[10px] text-eliga-blue" x-text="(status === 'starting' ? 'STARTING XI' : 'SUBSTITUTES')"></h3>
+                                <span class="text-[10px] font-black bg-white px-2 py-1 rounded text-magenta shadow-sm" x-text="(setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers).filter(x => x.status === status).length + (status === 'starting' ? '/11' : '')"></span>
+                            </div>
+                            <div class="space-y-1">
+                                <!-- FIX #3: edit ღილაკი მუშაობს openSetupPlayerEdit-ით -->
+                                <template x-for="p in getSortedPlayers(setup.activeTab === 'home' ? setup.homePlayers : setup.awayPlayers, status)" :key="p.id">
+                                    <div class="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl text-sm">
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <strong class="mr-2 text-eliga-blue font-black shrink-0" x-text="'#'+p.num"></strong>
+                                            <span class="text-gray-600 font-bold text-xs break-words" x-text="p.name || ''"></span>
+                                            <span x-show="p.isGK" class="ml-1.5 text-[8px] font-black bg-yellow-400 text-gray-800 px-1 py-0.5 rounded shrink-0">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1.5 text-[8px] font-black bg-slate-800 text-white px-1 py-0.5 rounded shrink-0">C</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1 shrink-0">
+                                            <button @click="setCaptain(p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-gray-100 text-gray-600 transition">C</button>
+                                            <button @click="openSetupPlayerEdit(setup.activeTab, p)" type="button" class="text-[9px] font-black bg-gray-50 border px-1.5 py-1 rounded hover:bg-blue-50 hover:text-eliga-blue text-gray-600 transition"><i class="fa-solid fa-pen"></i></button>
+                                            <button @click="removePlayerFromSetup(p.id)" class="text-red-400 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- FIX #2: სამსაჯო ბრიგადა ღილაკი - @click სწორად -->
+                <button @click="refereeSetupModal.open = true" class="w-full bg-gray-100 text-eliga-blue border border-gray-200 py-4 rounded-2xl font-black text-[11px] tracking-widest uppercase mt-4 hover:bg-gray-200 transition flex items-center justify-center">
+                    <i class="fa-solid fa-whistle mr-2"></i> სამსაჯო ბრიგადა
+                </button>
+                
+                <button @click="startMatch()" class="w-full bg-magenta text-white py-5 rounded-2xl font-black text-xl shadow-xl mt-6 tracking-widest uppercase">Start Match</button>
+            </div>
+        </div>
+
+        <!-- FIX #2: მსაჯების modal - refereeSetupModal.open სწორია -->
+        <div x-show="refereeSetupModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h3 class="text-lg font-black uppercase tracking-wider text-eliga-blue"><i class="fa-solid fa-whistle mr-2"></i> მსაჯები</h3>
+                    <button @click="refereeSetupModal.open = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 transition">&times;</button>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მთავარი მსაჯი</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.main" placeholder="მთავარი მსაჯი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('main')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'main' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 1</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.assistant1" placeholder="ასისტენტი 1" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('assistant1')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'assistant1' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">ასისტენტი 2</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.assistant2" placeholder="ასისტენტი 2" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('assistant2')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'assistant2' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">მეოთხე მსაჯი</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.fourth" placeholder="მეოთხე მსაჯი" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('fourth')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'fourth' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">VAR</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.var" placeholder="VAR" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('var')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'var' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">AVAR</label>
+                        <div class="relative w-full shadow-sm">
+                            <input type="text" x-model="setup.referees.avar" placeholder="AVAR" class="w-full min-w-0 p-3 pr-12 rounded-xl border bg-gray-50 font-bold outline-none focus:ring-2 ring-magenta text-sm text-gray-700">
+                            <button @click="toggleListening('avar')" type="button" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg transition" :class="listeningTarget === 'avar' ? 'text-red-500 bg-red-50 animate-pulse' : 'text-gray-400 hover:text-magenta hover:bg-gray-200'"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <button @click="refereeSetupModal.open = false" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase mt-4 hover:opacity-90 transition shadow-lg">შენახვა</button>
+            </div>
+        </div>
+
+        <!-- FIX #3: Setup player edit modal -->
+        <div x-show="setupPlayerEditModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-[60]">
+            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4 shadow-2xl">
+                <h3 class="font-black text-lg text-center uppercase tracking-widest text-eliga-blue border-b pb-2">რედაქტირება</h3>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">ნომერი</label>
+                    <input type="tel" x-model="setupPlayerEditModal.num" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black focus:outline-none focus:ring-2 ring-magenta text-gray-800">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">სახელი და გვარი</label>
+                    <input type="text" x-model="setupPlayerEditModal.name" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold focus:outline-none focus:ring-2 ring-magenta text-gray-800 text-sm">
+                </div>
+                <div class="flex space-x-2 pt-4">
+                    <button @click="setupPlayerEditModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-gray-200 transition text-[11px]">გაუქმება</button>
+                    <button @click="saveSetupPlayerEdit()" class="flex-1 bg-magenta text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-pink-600 transition shadow-md text-[11px]">შენახვა</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE VIEW -->
+        <div x-show="view === 'live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
+            <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] border-b border-white/20 bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
+                <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white transition z-10"><i class="fa-solid fa-house text-xl"></i></button>
+                <div class="flex items-center justify-between mt-6 relative z-10 space-x-2">
+                    <div class="flex-1 min-w-0 cursor-pointer text-center" @click="openScoreEdit('home')">
+                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md mb-1 truncate px-1" x-text="match.homeName"></p>
+                        <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreHome"></p>
+                    </div>
+                    <div class="px-2 flex flex-col items-center flex-shrink-0">
+                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg cursor-pointer transition" @click="openTimeEdit()">
+                            <p class="text-4xl font-black font-mono tracking-wider text-white drop-shadow-md" x-text="formatTime(match.displayTimer || match.timer)"></p>
+                        </div>
+                        <button @click="toggleTimer()" class="mt-5 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transform active:scale-95 transition" :class="match.isPaused ? 'bg-white text-[#2e3192]' : 'bg-magenta text-white'">
+                            <i class="text-2xl" :class="match.isPaused ? 'fa-solid fa-play ml-1' : 'fa-solid fa-pause'"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 min-w-0 cursor-pointer text-center" @click="openScoreEdit('away')">
+                        <p class="text-xs uppercase font-black tracking-widest text-white drop-shadow-md mb-1 truncate px-1" x-text="match.awayName"></p>
+                        <p class="text-7xl font-black mt-1 drop-shadow-lg" x-text="match.scoreAway"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-4 pt-4 pb-2 z-10 relative shrink-0">
+                <button @click="lineupModal.open = true" class="w-full bg-white border border-gray-200 text-eliga-blue py-3 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest flex justify-center items-center hover:bg-gray-50 transition active:scale-95 mb-2">
+                    <i class="fa-solid fa-users mr-2"></i> შემადგენლობები
+                </button>
+                <!-- FIX #4: სტატისტიკა - getLiveStat view-ზე დამოკიდებული -->
+                <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
+                <div class="grid grid-cols-4 gap-2">
+                    <template x-for="type in ['goal', 'own_goal', 'penalty', 'yellow', 'red', 'corner', 'offside', 'sub']">
+                        <button @click="openEventModal(type)" class="py-3 px-1 rounded-2xl flex flex-col items-center space-y-1 text-white shadow-md transform active:scale-95 transition" :class="{
+                            'bg-green-500': type === 'goal', 
+                            'bg-orange-500': type === 'own_goal', 
+                            'bg-emerald-600': type === 'penalty', 
+                            'bg-yellow-400 text-gray-800': type === 'yellow', 
+                            'bg-red-500': type === 'red', 
+                            'bg-eliga-cyan': type === 'corner', 
+                            'bg-purple-500': type === 'offside', 
+                            'bg-eliga-blue': type === 'sub'
+                        }">
+                            <i class="fa-solid text-xl drop-shadow-sm" :class="{
+                                'fa-futbol': type === 'goal' || type === 'own_goal', 
+                                'fa-bullseye': type === 'penalty', 
+                                'fa-square': type === 'yellow' || type === 'red', 
+                                'fa-flag': type === 'corner' || type === 'offside', 
+                                'fa-arrows-rotate': type === 'sub'
+                            }"></i>
+                            <span class="text-[9px] font-black uppercase tracking-widest text-center leading-tight" x-text="type.replace('_', ' ')"></span>
+                        </button>
+                    </template>
+                </div>
+                
+                <div class="space-y-3 pb-24">
+                    <div class="flex items-center justify-between border-b pb-2">
+                        <h3 class="font-black text-gray-400 text-xs uppercase tracking-widest">Match Events</h3>
+                        <span class="text-[10px] font-black text-eliga-blue bg-blue-50 px-2 py-0.5 rounded-md" x-text="match.events.length"></span>
+                    </div>
+                    <template x-for="(ev, index) in match.events" :key="ev.id">
+                        <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
+                            <div class="flex flex-col items-center justify-center bg-gray-50 border rounded-lg px-3 py-2 mr-3 cursor-pointer" @click="openTimeEditOnly(index)">
+                                <span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span>
+                            </div>
+                            <div class="w-8 flex justify-center mr-2">
+                                <i class="fa-solid text-xl" :class="{
+                                    'fa-futbol text-green-500': ev.type === 'goal', 
+                                    'fa-futbol text-orange-500': ev.type === 'own_goal', 
+                                    'fa-bullseye text-emerald-600': ev.type === 'penalty', 
+                                    'fa-square text-yellow-400': ev.type === 'yellow', 
+                                    'fa-square text-red-500': ev.type === 'red', 
+                                    'fa-flag text-eliga-cyan': ev.type === 'corner', 
+                                    'fa-flag text-purple-500': ev.type === 'offside', 
+                                    'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'
+                                }"></i>
+                            </div>
+                            <div class="flex-1 text-sm min-w-0 pr-2">
+                                <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? match.homeName : match.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
+                                <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
+                                <template x-if="ev.type === 'sub'">
+                                    <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
+                                        <span class="text-red-500 flex items-start"><i class="fa-solid fa-arrow-down mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                        <span class="text-green-500 flex items-start"><i class="fa-solid fa-arrow-up mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="flex flex-col space-y-1.5 ml-1 shrink-0">
+                                <button @click="openEventEdit(index)" class="text-eliga-blue w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button @click="if(confirm('წავშალოთ ეს მოვლენა?')) { match.events.splice(index, 1); saveState(); }" class="text-red-500 w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-white absolute bottom-0 w-full z-10 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+                <button @click="finishMatch()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">Finish Match</button>
+            </div>
+        </div>
+
+        <!-- GUEST LIVE -->
+        <div x-show="view === 'guest_live'" x-cloak class="flex flex-col h-[100dvh] overflow-hidden bg-gray-50">
+            <div class="p-8 pb-10 relative text-white text-center shadow-2xl z-20 rounded-b-[40px] bg-gradient-to-br from-[#1a1c5b] via-[#2e3192] to-[#e6007e]">
+                <button @click="goBack()" class="absolute top-6 left-6 text-white/60 hover:text-white z-10"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                <div class="absolute top-4 right-6 bg-red-500 text-white font-black text-[9px] uppercase px-2 py-1 rounded-md animate-pulse tracking-widest"><i class="fa-solid fa-circle text-[7px] mr-1"></i> LIVE</div>
+                <div class="flex items-center justify-between mt-6 relative z-10 space-x-2">
+                    <div class="flex-1 min-w-0 text-center">
+                        <p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.homeName"></p>
+                        <p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreHome ?? 0"></p>
+                    </div>
+                    <div class="px-2 flex flex-col items-center flex-shrink-0">
+                        <div class="backdrop-blur-md bg-black/20 border border-white/10 px-5 py-3 rounded-2xl shadow-lg">
+                            <p class="text-4xl font-black font-mono tracking-wider text-white" x-text="formatTime(firebaseLiveMatch?.displayTimer ?? firebaseLiveMatch?.timer ?? 0)"></p>
+                        </div>
+                        <p class="text-[9px] font-bold text-white/60 mt-3 uppercase tracking-wider" x-text="firebaseLiveMatch?.isPaused ? 'შეჩერებულია' : 'მიმდინარეობს'"></p>
+                    </div>
+                    <div class="flex-1 min-w-0 text-center">
+                        <p class="text-xs uppercase font-black tracking-widest text-white mb-1 truncate px-1" x-text="firebaseLiveMatch?.awayName"></p>
+                        <p class="text-7xl font-black mt-1" x-text="firebaseLiveMatch?.scoreAway ?? 0"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-4 pt-4 pb-2 z-10 relative shrink-0">
+                <button @click="lineupModal.open = true" class="w-full bg-white border border-gray-200 text-eliga-blue py-3 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest flex justify-center items-center hover:bg-gray-50 transition active:scale-95 mb-2">
+                    <i class="fa-solid fa-users mr-2"></i> შემადგენლობები
+                </button>
+                <!-- FIX #5: სტატისტიკა guest_live-შიც სწორად - getLiveStat view-ს ამოწმებს -->
+                <div class="bg-white rounded-2xl shadow-sm border p-3 flex justify-between items-center text-[11px] font-black uppercase text-gray-500">
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-yellow-400 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'yellow')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'yellow')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-square text-red-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'red')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'red')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-flag text-eliga-cyan mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'corner')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'corner')"></span></div></div>
+                    <div class="text-center w-1/4 flex flex-col items-center"><i class="fa-solid fa-arrows-rotate text-purple-500 mb-1 text-sm"></i> <div><span class="text-magenta" x-text="getLiveStat('home', 'sub')"></span> - <span class="text-eliga-blue" x-text="getLiveStat('away', 'sub')"></span></div></div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-4 pb-6 space-y-5">
+                <div class="space-y-3 pb-8">
+                    <template x-for="ev in (firebaseLiveMatch?.events || [])" :key="ev.id">
+                        <div class="flex items-center p-3 bg-white shadow-sm border rounded-2xl relative overflow-hidden" :class="ev.team === 'home' ? 'border-l-4 border-l-magenta' : 'border-l-4 border-l-eliga-blue'">
+                            <div class="bg-gray-50 border rounded-lg px-3 py-2 mr-3"><span class="font-mono text-xs font-black text-gray-700" x-text="ev.time"></span></div>
+                            <div class="w-8 flex justify-center mr-2">
+                                <i class="fa-solid text-xl" :class="{
+                                    'fa-futbol text-green-500': ev.type === 'goal', 
+                                    'fa-futbol text-orange-500': ev.type === 'own_goal', 
+                                    'fa-bullseye text-emerald-600': ev.type === 'penalty', 
+                                    'fa-square text-yellow-400': ev.type === 'yellow', 
+                                    'fa-square text-red-500': ev.type === 'red', 
+                                    'fa-flag text-eliga-cyan': ev.type === 'corner', 
+                                    'fa-flag text-purple-500': ev.type === 'offside', 
+                                    'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'
+                                }"></i>
+                            </div>
+                            <div class="flex-1 text-sm min-w-0 pr-2">
+                                <div class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5 truncate" x-text="(ev.team === 'home' ? firebaseLiveMatch?.homeName : firebaseLiveMatch?.awayName) + ' • ' + ev.type.replace('_', ' ')"></div>
+                                <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><div class="font-black text-gray-800 text-xs break-words" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></div></template>
+                                <template x-if="ev.type === 'sub'">
+                                    <div class="font-bold flex flex-col space-y-1 text-[10px] mt-1 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
+                                        <span class="text-red-500 flex items-start"><i class="fa-solid fa-arrow-down mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                        <span class="text-green-500 flex items-start"><i class="fa-solid fa-arrow-up mr-1.5 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- LINEUP MODAL -->
+        <div x-show="lineupModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl h-[85vh] flex flex-col" @click.away="lineupModal.open = false">
+                <div class="flex justify-between items-center border-b pb-3 shrink-0">
+                    <h3 class="text-lg font-black uppercase tracking-wider text-eliga-blue"><i class="fa-solid fa-users mr-2"></i> შემადგენლობები</h3>
+                    <button @click="lineupModal.open = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 transition">&times;</button>
+                </div>
+                <div class="flex-1 overflow-y-auto pt-4 space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Home -->
+                        <div class="bg-gray-50 p-3 rounded-xl border">
+                            <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="view === 'guest_live' ? firebaseLiveMatch?.homeName : match.homeName"></h4>
+                            <div class="text-[10px] space-y-1">
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers), 'starting')">
+                                    <div class="flex py-1 items-center min-w-0 pr-1 justify-between">
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
+                                            <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
+                                            <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                            <span x-show="isSubbedIn(p, 'home')" class="ml-1 text-green-500"><i class="fa-solid fa-arrow-up text-[10px]"></i></span>
+                                        </div>
+                                        <!-- FIX #3: openLivePlayerEdit მუშაობს -->
+                                        <button x-show="role === 'manager' || role === 'superadmin'" @click="openLivePlayerEdit('home', p)" class="text-gray-400 hover:text-eliga-blue transition shrink-0 p-1"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                    </div>
+                                </template>
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.homePlayers : match.homePlayers), 'sub')">
+                                    <div class="flex py-1 items-center min-w-0 pr-1 justify-between text-gray-500">
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
+                                            <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
+                                            <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                            <span x-show="isSubbedOut(p, 'home')" class="ml-1 text-red-500"><i class="fa-solid fa-arrow-down text-[10px]"></i></span>
+                                        </div>
+                                        <button x-show="role === 'manager' || role === 'superadmin'" @click="openLivePlayerEdit('home', p)" class="text-gray-300 hover:text-eliga-blue transition shrink-0 p-1"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                    </div>
+                                </template>
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
+                                <div class="flex py-1 items-start min-w-0 pr-1 text-gray-700"><span class="font-black text-[10px] break-words whitespace-normal" x-text="(view === 'guest_live' ? firebaseLiveMatch?.homeCoach : match.homeCoach) || 'N/A'"></span></div>
+                            </div>
+                        </div>
+                        <!-- Away -->
+                        <div class="bg-gray-50 p-3 rounded-xl border">
+                            <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="view === 'guest_live' ? firebaseLiveMatch?.awayName : match.awayName"></h4>
+                            <div class="text-[10px] space-y-1">
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers), 'starting')">
+                                    <div class="flex py-1 items-center min-w-0 pr-1 justify-between">
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
+                                            <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
+                                            <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                            <span x-show="isSubbedIn(p, 'away')" class="ml-1 text-green-500"><i class="fa-solid fa-arrow-up text-[10px]"></i></span>
+                                        </div>
+                                        <button x-show="role === 'manager' || role === 'superadmin'" @click="openLivePlayerEdit('away', p)" class="text-gray-400 hover:text-eliga-blue transition shrink-0 p-1"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                    </div>
+                                </template>
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
+                                <template x-for="p in getSortedPlayers((view === 'guest_live' ? firebaseLiveMatch?.awayPlayers : match.awayPlayers), 'sub')">
+                                    <div class="flex py-1 items-center min-w-0 pr-1 justify-between text-gray-500">
+                                        <div class="flex items-center min-w-0 pr-1">
+                                            <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
+                                            <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
+                                            <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                            <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                            <span x-show="isSubbedOut(p, 'away')" class="ml-1 text-red-500"><i class="fa-solid fa-arrow-down text-[10px]"></i></span>
+                                        </div>
+                                        <button x-show="role === 'manager' || role === 'superadmin'" @click="openLivePlayerEdit('away', p)" class="text-gray-300 hover:text-eliga-blue transition shrink-0 p-1"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                    </div>
+                                </template>
+                                <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
+                                <div class="flex py-1 items-start min-w-0 pr-1 text-gray-700"><span class="font-black text-[10px] break-words whitespace-normal" x-text="(view === 'guest_live' ? firebaseLiveMatch?.awayCoach : match.awayCoach) || 'N/A'"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Referees -->
+                    <div class="mt-6 border-t pt-4">
+                        <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 tracking-widest text-center">სამსაჯო ბრიგადა</h3>
+                        <div class="bg-gray-50 p-4 rounded-xl border grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">მთავარი მსაჯი</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.main : match.referees?.main) || 'N/A'"></strong></div>
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">მეოთხე მსაჯი</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.fourth : match.referees?.fourth) || 'N/A'"></strong></div>
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">ასისტენტი 1</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.assistant1 : match.referees?.assistant1) || 'N/A'"></strong></div>
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">VAR</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.var : match.referees?.var) || 'N/A'"></strong></div>
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">ასისტენტი 2</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.assistant2 : match.referees?.assistant2) || 'N/A'"></strong></div>
+                            <div><span class="text-gray-400 font-bold block text-[8px] uppercase">AVAR</span> <strong class="text-gray-700 break-words" x-text="(view === 'guest_live' ? firebaseLiveMatch?.referees?.avar : match.referees?.avar) || 'N/A'"></strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FIX #3: Live player edit modal -->
+        <div x-show="livePlayerEditModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-[60]">
+            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4 shadow-2xl">
+                <h3 class="font-black text-lg text-center uppercase tracking-widest text-eliga-blue border-b pb-2">რედაქტირება</h3>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">ნომერი</label>
+                    <input type="tel" x-model="livePlayerEditModal.num" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black focus:outline-none focus:ring-2 ring-magenta text-gray-800">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">სახელი და გვარი</label>
+                    <input type="text" x-model="livePlayerEditModal.name" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold focus:outline-none focus:ring-2 ring-magenta text-gray-800 text-sm">
+                </div>
+                <div class="flex space-x-2 pt-4">
+                    <button @click="livePlayerEditModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-gray-200 transition text-[11px]">გაუქმება</button>
+                    <button @click="saveLivePlayerEdit()" class="flex-1 bg-magenta text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-pink-600 transition shadow-md text-[11px]">შენახვა</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div x-show="view === 'history'" x-cloak class="p-6 pt-8 h-[100dvh] flex flex-col bg-gray-50">
+            <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border relative">
+                <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition">
+                    <i class="fa-solid" :class="(role === 'guest' || role === 'superadmin') ? 'fa-right-from-bracket' : 'fa-chevron-left'"></i>
+                </button>
+                <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider mx-auto pr-8">History</h2>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-4">
+                <template x-for="live in liveMatches" :key="live.id">
+                    <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
+                        <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
+                        <button x-show="role === 'manager' || role === 'superadmin'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
+                        <div class="flex justify-between items-center text-center">
+                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
+                            <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="formatTime(live.displayTimer !== undefined ? live.displayTimer : live.timer)"></div>
+                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.awayName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreAway"></p></div>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-for="(h, index) in history">
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
+                        <button x-show="role === 'manager' || role === 'superadmin'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                        <div class="border-b pb-2 pr-10"><span class="text-[10px] font-black text-eliga-cyan tracking-widest uppercase" x-text="h.date"></span></div>
+                        <div class="flex justify-between items-center">
+                            <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.homeName"></p><p class="text-3xl font-black text-magenta" x-text="h.scoreHome"></p></div>
+                            <div class="text-[10px] font-black text-gray-300 bg-gray-50 px-3 py-1.5 rounded-lg border mx-2">VS</div>
+                            <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black text-gray-500 uppercase mb-1 truncate px-1" x-text="h.awayName"></p><p class="text-3xl font-black text-eliga-blue" x-text="h.scoreAway"></p></div>
+                        </div>
+                        <button @click="viewReport(index)" class="w-full bg-gray-50 text-eliga-blue border py-3 rounded-xl font-black text-[10px] uppercase tracking-widest mt-2 hover:bg-eliga-blue hover:text-white transition">View Full Report</button>
+                    </div>
+                </template>
+                <div x-show="history.length === 0" class="text-center text-gray-400 font-bold mt-20">ისტორია ცარიელია</div>
+            </div>
+        </div>
+
+        <!-- REPORT -->
+        <div x-show="view === 'report'" x-cloak class="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
+            <div class="p-4 pt-8 bg-white border-b flex items-center justify-between shadow-sm z-10">
+                <button @click="goBack()" class="p-2 text-gray-500 hover:text-magenta transition"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                <h2 class="text-lg font-black text-eliga-blue uppercase tracking-wider">Report</h2>
+                <div class="flex items-center space-x-2">
+                    <button x-show="role === 'superadmin'" @click="revertToLive(currentReport.id)" class="text-white bg-green-500 px-3 py-2 rounded-xl font-bold text-[10px] uppercase flex items-center shadow-md transform active:scale-95 transition"><i class="fa-solid fa-play mr-1.5"></i> LIVE</button>
+                    <button @click="downloadPDF()" class="text-white bg-magenta px-4 py-2 rounded-xl font-bold text-xs flex items-center shadow-md transform active:scale-95 transition"><i class="fa-solid fa-download mr-2"></i> PDF</button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="pdf-content" class="bg-white rounded-2xl shadow-md p-6 pdf-container border-t-8 border-t-magenta">
+                    <div class="text-center border-b pb-4 mb-4">
+                        <h1 class="font-black text-2xl uppercase text-eliga-blue tracking-tighter">Match Report</h1>
+                        <p class="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest" x-text="currentReport?.date"></p>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-50 border p-4 rounded-2xl mb-6">
+                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.homeName"></p><p class="text-4xl font-black text-magenta" x-text="currentReport?.scoreHome"></p></div>
+                        <div class="text-sm font-black text-gray-300 mx-2">VS</div>
+                        <div class="text-center flex-1 min-w-0"><p class="text-[10px] font-black uppercase text-gray-500 mb-1 break-words whitespace-normal" x-text="currentReport?.awayName"></p><p class="text-4xl font-black text-eliga-blue" x-text="currentReport?.scoreAway"></p></div>
+                    </div>
+                    <div class="mb-6 bg-white border border-gray-200 p-4 rounded-2xl flex justify-between shadow-sm">
+                        <div class="w-1/2 pr-3 text-left space-y-2 border-r border-gray-100">
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.homeName + ' GOALS'"></h4>
+                            <template x-for="g in currentReport?.stats?.home?.goals">
+                                <p class="text-[11px] font-bold text-gray-700 flex items-start leading-tight mb-1"><i class="fa-solid fa-futbol text-magenta mr-2 mt-0.5 text-[10px] shrink-0"></i> <span class="break-words whitespace-normal" x-text="g.time + ' - ' + g.player"></span></p>
+                            </template>
+                            <div x-show="!currentReport?.stats?.home?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
+                        </div>
+                        <div class="w-1/2 pl-3 text-right space-y-2">
+                            <h4 class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-3 break-words whitespace-normal" x-text="currentReport?.awayName + ' GOALS'"></h4>
+                            <template x-for="g in currentReport?.stats?.away?.goals">
+                                <p class="text-[11px] font-bold text-gray-700 flex items-start justify-end leading-tight mb-1"><span class="break-words whitespace-normal text-right" x-text="g.time + ' - ' + g.player"></span> <i class="fa-solid fa-futbol text-eliga-blue ml-2 mt-0.5 text-[10px] shrink-0"></i></p>
+                            </template>
+                            <div x-show="!currentReport?.stats?.away?.goals?.length" class="text-[10px] text-gray-300 italic">No goals</div>
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Statistics</h3>
+                        <table class="w-full text-sm">
+                            <tr class="text-gray-400 font-bold text-[9px] uppercase border-b bg-gray-50">
+                                <td class="py-2 px-2 w-1/3 rounded-l-lg break-words whitespace-normal" x-text="currentReport?.homeName"></td><td class="text-center w-1/3">Stat</td><td class="text-right w-1/3 px-2 rounded-r-lg break-words whitespace-normal" x-text="currentReport?.awayName"></td>
+                            </tr>
+                            <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.yellow || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Yellow Cards</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.yellow || 0"></td></tr>
+                            <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.red || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Red Cards</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.red || 0"></td></tr>
+                            <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.corner || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Corners</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.corner || 0"></td></tr>
+                            <tr class="border-b"><td class="py-2.5 px-2 font-black text-magenta" x-text="currentReport?.stats?.home?.offside || 0"></td><td class="text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">Offsides</td><td class="text-right px-2 font-black text-eliga-blue" x-text="currentReport?.stats?.away?.offside || 0"></td></tr>
+                        </table>
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Match Events</h3>
+                        <div class="space-y-1 bg-gray-50 rounded-xl p-2 border">
+                            <template x-for="ev in currentReport?.events">
+                                <div class="flex items-center text-[11px] border-b border-white py-2 px-1 last:border-0">
+                                    <span class="font-mono font-black text-gray-400 w-10 shrink-0" x-text="ev.time"></span>
+                                    <i class="fa-solid mx-2 text-[12px]" :class="{
+                                        'fa-futbol text-green-500': ev.type === 'goal', 
+                                        'fa-futbol text-orange-500': ev.type === 'own_goal', 
+                                        'fa-bullseye text-emerald-600': ev.type === 'penalty', 
+                                        'fa-square text-yellow-400': ev.type === 'yellow', 
+                                        'fa-square text-red-500': ev.type === 'red', 
+                                        'fa-flag text-eliga-cyan': ev.type === 'corner', 
+                                        'fa-flag text-purple-500': ev.type === 'offside', 
+                                        'fa-arrows-rotate text-eliga-blue': ev.type === 'sub'
+                                    }"></i>
+                                    <span class="font-bold text-gray-600 w-16 break-words whitespace-normal uppercase text-[9px] shrink-0" x-text="ev.team === 'home' ? currentReport?.homeName : currentReport?.awayName"></span>
+                                    <span class="uppercase font-black w-14 text-[9px] shrink-0" :class="ev.team === 'home' ? 'text-magenta' : 'text-eliga-blue'" x-text="ev.type.replace('_', ' ')"></span>
+                                    <template x-if="!['sub', 'corner', 'offside'].includes(ev.type)"><span class="font-bold text-gray-800 ml-1 break-words whitespace-normal" x-text="'#' + ev.playerNum + (ev.playerName ? ' ' + ev.playerName : '')"></span></template>
+                                    <template x-if="ev.type === 'sub'">
+                                        <div class="flex flex-col space-y-1 ml-1 w-full">
+                                            <span class="text-red-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-down mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerOut.num + (ev.playerOut.name ? ' ' + ev.playerOut.name : '')"></span></span>
+                                            <span class="text-green-500 font-medium flex items-start leading-tight"><i class="fa-solid fa-arrow-up mr-1 mt-0.5 shrink-0"></i> <span class="break-words whitespace-normal" x-text="'#' + ev.playerIn.num + (ev.playerIn.name ? ' ' + ev.playerIn.name : '')"></span></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <div x-show="!currentReport?.events?.length" class="text-[10px] font-bold text-gray-400 text-center py-4">No events recorded.</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 border-b pb-1 tracking-widest">Lineups</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-xl border">
+                                <h4 class="font-black text-[10px] text-white bg-magenta px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.homeName"></h4>
+                                <div class="text-[10px] space-y-1">
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
+                                    <template x-for="p in getSortedPlayers(currentReport?.homePlayers, 'starting')">
+                                        <div class="flex py-1 items-start justify-between">
+                                            <div class="flex items-start min-w-0 pr-1">
+                                                <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
+                                                <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
+                                                <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                                <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                                <span x-show="isSubbedIn(p, 'home')" class="ml-1 text-green-500"><i class="fa-solid fa-arrow-up text-[10px]"></i></span>
+                                            </div>
+                                            <template x-if="(currentReport?.stats?.home?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
+                                        </div>
+                                    </template>
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
+                                    <template x-for="p in getSortedPlayers(currentReport?.homePlayers, 'sub')">
+                                        <div class="flex py-1 items-start justify-between text-gray-500">
+                                            <div class="flex items-start min-w-0 pr-1">
+                                                <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
+                                                <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
+                                                <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                                <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                                <span x-show="isSubbedOut(p, 'home')" class="ml-1 text-red-500"><i class="fa-solid fa-arrow-down text-[10px]"></i></span>
+                                            </div>
+                                            <template x-if="(currentReport?.stats?.home?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-magenta text-[10px] mt-0.5 shrink-0"></i></template>
+                                        </div>
+                                    </template>
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
+                                    <div class="flex py-1 items-start min-w-0 pr-1 text-gray-700"><span class="font-black text-[10px] break-words whitespace-normal" x-text="currentReport?.homeCoach || 'N/A'"></span></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-xl border">
+                                <h4 class="font-black text-[10px] text-white bg-eliga-blue px-2 py-1 rounded mb-2 uppercase break-words whitespace-normal text-center tracking-widest" x-text="currentReport?.awayName"></h4>
+                                <div class="text-[10px] space-y-1">
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-2 border-b pb-0.5 tracking-wider">Starting XI</p>
+                                    <template x-for="p in getSortedPlayers(currentReport?.awayPlayers, 'starting')">
+                                        <div class="flex py-1 items-start justify-between">
+                                            <div class="flex items-start min-w-0 pr-1">
+                                                <span class="font-black w-5 text-gray-400 shrink-0" x-text="'#'+p.num"></span>
+                                                <span class="font-bold text-gray-700 break-words whitespace-normal" x-text="p.name"></span>
+                                                <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                                <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                                <span x-show="isSubbedIn(p, 'away')" class="ml-1 text-green-500"><i class="fa-solid fa-arrow-up text-[10px]"></i></span>
+                                            </div>
+                                            <template x-if="(currentReport?.stats?.away?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
+                                        </div>
+                                    </template>
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Bench</p>
+                                    <template x-for="p in getSortedPlayers(currentReport?.awayPlayers, 'sub')">
+                                        <div class="flex py-1 items-start justify-between text-gray-500">
+                                            <div class="flex items-start min-w-0 pr-1">
+                                                <span class="font-black w-5 text-gray-300 shrink-0" x-text="'#'+p.num"></span>
+                                                <span class="font-medium break-words whitespace-normal" x-text="p.name"></span>
+                                                <span x-show="p.isGK" class="ml-1 text-[7px] bg-yellow-400 text-gray-800 px-0.5 rounded font-black">GK</span>
+                                                <span x-show="p.isCaptain" class="ml-1 text-[7px] bg-slate-800 text-white px-0.5 rounded font-black">C</span>
+                                                <span x-show="isSubbedOut(p, 'away')" class="ml-1 text-red-500"><i class="fa-solid fa-arrow-down text-[10px]"></i></span>
+                                            </div>
+                                            <template x-if="(currentReport?.stats?.away?.goals || []).some(g => g.num == p.num)"><i class="fa-solid fa-futbol text-eliga-blue text-[10px] mt-0.5 shrink-0"></i></template>
+                                        </div>
+                                    </template>
+                                    <p class="font-black text-[8px] text-gray-400 uppercase mt-3 border-b pb-0.5 tracking-wider">Coach</p>
+                                    <div class="flex py-1 items-start min-w-0 pr-1 text-gray-700"><span class="font-black text-[10px] break-words whitespace-normal" x-text="currentReport?.awayCoach || 'N/A'"></span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 border-t pt-4">
+                            <h3 class="font-black text-[10px] uppercase text-gray-400 mb-3 tracking-widest text-center">Match Officials</h3>
+                            <div class="bg-gray-50 p-4 rounded-xl border grid grid-cols-2 gap-y-3 gap-x-2 text-[10px]">
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">მთავარი მსაჯი</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.main || 'N/A'"></strong></div>
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">მეოთხე მსაჯი</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.fourth || 'N/A'"></strong></div>
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">ასისტენტი 1</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.assistant1 || 'N/A'"></strong></div>
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">VAR</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.var || 'N/A'"></strong></div>
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">ასისტენტი 2</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.assistant2 || 'N/A'"></strong></div>
+                                <div><span class="text-gray-400 font-bold block text-[8px] uppercase">AVAR</span> <strong class="text-gray-700 break-words" x-text="currentReport?.referees?.avar || 'N/A'"></strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENT MODAL -->
+        <div x-show="modal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-end justify-center z-50">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 space-y-4 shadow-2xl" @click.away="modal.open = false">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-black uppercase tracking-wider text-eliga-blue" x-text="modal.type.replace('_', ' ') + ' Event'"></h3>
+                    <button @click="modal.open = false" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold hover:bg-gray-200 transition">&times;</button>
+                </div>
+                <div class="flex p-1 bg-gray-100 rounded-xl border">
+                    <button @click="modal.team = 'home'" :class="modal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition truncate px-2" x-text="match.homeName"></button>
+                    <button @click="modal.team = 'away'" :class="modal.team === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-3 rounded-lg font-black text-xs uppercase tracking-widest transition truncate px-2" x-text="match.awayName"></button>
+                </div>
+                <template x-if="modal.type === 'sub'">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <p class="text-[9px] font-black text-red-500 uppercase bg-red-50 py-1 px-2 rounded-md inline-block border border-red-100 tracking-widest">Out (Field)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentFieldPlayers(modal.team)" :key="p.id">
+                                    <button :disabled="getPlayerState(modal.team, p.num) !== 'active'" @click="modal.playerOut = p" :class="{'bg-red-500 text-white shadow-md border-red-600': modal.playerOut?.id === p.id, 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded', 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out', 'bg-white border-gray-200 text-gray-600 hover:bg-magenta hover:text-white': getPlayerState(modal.team, p.num) === 'active' && modal.playerOut?.id !== p.id}" class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-2 border-t pt-3">
+                            <p class="text-[9px] font-black text-green-600 uppercase bg-green-50 py-1 px-2 rounded-md inline-block border border-green-100 tracking-widest">In (Bench)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentBenchPlayers(modal.team)" :key="p.id">
+                                    <button :disabled="getPlayerState(modal.team, p.num) !== 'active'" @click="modal.playerIn = p" :class="{'bg-green-500 text-white shadow-md border-green-600': modal.playerIn?.id === p.id, 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded', 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out', 'bg-white border-gray-200 text-gray-600 hover:bg-green-500 hover:text-white': getPlayerState(modal.team, p.num) === 'active' && modal.playerIn?.id !== p.id}" class="p-3 border rounded-xl text-xs font-bold transition truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <button @click="recordSubstitution()" x-show="modal.playerOut && modal.playerIn" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase mt-4 hover:opacity-90 transition">Confirm Sub</button>
+                    </div>
+                </template>
+                <template x-if="['corner', 'offside'].includes(modal.type)">
+                    <div class="pt-4">
+                        <button @click="recordTeamEvent()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black tracking-widest uppercase hover:opacity-90 transition shadow-md">დადასტურება</button>
+                    </div>
+                </template>
+                <template x-if="!['sub', 'corner', 'offside'].includes(modal.type)">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <p class="text-[9px] font-black text-green-600 uppercase bg-green-50 py-1 px-2 rounded-md inline-block border border-green-100 tracking-widest">Field (მოედანი)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentFieldPlayers(modal.team)" :key="p.id">
+                                    <button :disabled="getPlayerState(modal.team, p.num) === 'red_carded'" @click="recordStandardEvent(p)" :class="{'bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded', 'bg-white border-gray-200 text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95': getPlayerState(modal.team, p.num) !== 'red_carded'}" class="p-4 border rounded-xl text-xs font-black text-left transition shadow-sm truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-2 border-t pt-3">
+                            <p class="text-[9px] font-black text-gray-500 uppercase bg-gray-100 py-1 px-2 rounded-md inline-block border border-gray-200 tracking-widest">Bench (სათადარიგო)</p>
+                            <div class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
+                                <template x-for="p in getCurrentBenchPlayers(modal.team)" :key="p.id">
+                                    <button :disabled="getPlayerState(modal.team, p.num) === 'subbed_out' || getPlayerState(modal.team, p.num) === 'red_carded'" @click="recordStandardEvent(p)" :class="{'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'subbed_out', 'bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-60': getPlayerState(modal.team, p.num) === 'red_carded', 'bg-white border-gray-200 text-gray-700 hover:bg-magenta hover:text-white hover:border-magenta active:scale-95': getPlayerState(modal.team, p.num) === 'active'}" class="p-4 border rounded-xl text-xs font-black text-left transition shadow-sm truncate" x-text="'#'+p.num + (p.name ? ' ' + p.name : '') + (p.isGK ? ' (GK)' : '') + (p.isCaptain ? ' (C)' : '')"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- TIME MODAL -->
+        <div x-show="timeModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-3xl w-10/12 max-w-sm space-y-4 shadow-2xl" @click.away="timeModal.open = false">
+                <h3 class="font-black text-lg text-center uppercase tracking-widest text-eliga-blue border-b pb-2">დროის რედაქტირება</h3>
+                <div class="flex space-x-4 pt-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წუთი</label>
+                        <select x-model="timeModal.min" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block tracking-wider">წამი</label>
+                        <select x-model="timeModal.sec" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl font-mono text-xl font-black text-center focus:outline-none focus:ring-2 ring-magenta text-gray-800 appearance-none">
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex space-x-2 pt-4">
+                    <button @click="timeModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-gray-200 transition">გაუქმება</button>
+                    <button @click="saveTimeEdit()" class="flex-1 bg-magenta text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-pink-600 transition shadow-md">შენახვა</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCORE MODAL -->
+        <div x-show="scoreModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-3xl w-10/12 max-w-sm space-y-4 text-center shadow-2xl" @click.away="scoreModal.open = false">
+                <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest truncate px-2" x-text="(scoreModal.team === 'home' ? match.homeName : match.awayName) + ' • Score'"></h3>
+                <div class="flex items-center justify-center space-x-6 py-6 border-b border-t border-gray-100 my-4">
+                    <button @click="if(scoreModal.val > 0) scoreModal.val--" class="w-14 h-14 rounded-full bg-gray-50 border border-gray-200 text-gray-600 text-3xl font-bold hover:bg-gray-100 transition shadow-sm">-</button>
+                    <span class="text-7xl font-black text-eliga-blue font-mono w-20" x-text="scoreModal.val"></span>
+                    <button @click="scoreModal.val++" class="w-14 h-14 rounded-full bg-magenta text-white text-3xl font-bold shadow-md hover:opacity-90 transition">+</button>
+                </div>
+                <button @click="saveScoreEdit()" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:opacity-90 transition shadow-lg">დადასტურება</button>
+            </div>
+        </div>
+
+        <!-- EDIT EVENT MODAL -->
+        <div x-show="editModal.open" x-cloak class="fixed inset-0 bg-eliga-blue/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-3xl w-11/12 max-w-sm space-y-5 shadow-2xl" @click.away="editModal.open = false">
+                <h3 class="font-black text-lg text-center uppercase tracking-wider border-b border-gray-100 pb-3 text-eliga-blue" x-text="'Edit ' + editModal.type.replace('_', ' ')"></h3>
+                <div class="flex space-x-4">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წუთი</label>
+                        <select x-model="editModal.min" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
+                            <template x-for="i in 121"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">წამი</label>
+                        <select x-model="editModal.sec" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-center font-black text-gray-800 appearance-none">
+                            <template x-for="i in 60"><option :value="i-1" x-text="(i-1).toString().padStart(2,'0')"></option></template>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">გუნდი</label>
+                    <div class="flex p-1 bg-gray-100 border border-gray-200 rounded-xl">
+                        <button @click="editModal.team = 'home'" :class="editModal.team === 'home' ? 'bg-white shadow text-magenta' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-[11px] uppercase tracking-wider font-black transition truncate px-1" x-text="match.homeName"></button>
+                        <button @click="editModal.team = 'away'" :class="editModal.team === 'away' ? 'bg-white shadow text-eliga-blue' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-[11px] uppercase tracking-wider font-black transition truncate px-1" x-text="match.awayName"></button>
+                    </div>
+                </div>
+                <template x-if="!['sub', 'corner', 'offside'].includes(editModal.type)">
+                    <div>
+                        <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">მოთამაშე</label>
+                        <select x-model="editModal.playerNum" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-black text-gray-800 appearance-none">
+                            <template x-for="p in getSortedPlayers((editModal.team === 'home' ? match.homePlayers : match.awayPlayers), 'starting')">
+                                <option :value="p.num" x-text="'#' + p.num + (p.name ? ' ' + p.name : '')"></option>
+                            </template>
+                            <template x-for="p in getSortedPlayers((editModal.team === 'home' ? match.homePlayers : match.awayPlayers), 'sub')">
+                                <option :value="p.num" x-text="'#' + p.num + (p.name ? ' ' + p.name : '')"></option>
+                            </template>
+                        </select>
+                    </div>
+                </template>
+                <div class="flex space-x-2 pt-2">
+                    <button @click="editModal.open = false" class="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl font-black uppercase tracking-wider hover:bg-gray-200 transition text-[11px]">გაუქმება</button>
+                    <button @click="saveEventEdit()" class="flex-1 bg-magenta text-white py-3.5 rounded-xl font-black uppercase tracking-wider shadow-md hover:bg-pink-600 transition text-[11px]">დადასტურება</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
