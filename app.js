@@ -70,6 +70,7 @@ function matchApp() {
             else this.view = 'landing';
 
             this.hasActiveMatch = !!localStorage.getItem('activeMatch');
+            this.initBackNavigation();
             
             db.collection("matches").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 this.history = [];
@@ -537,6 +538,45 @@ function matchApp() {
         },
 
         // ============================================================
+
+        // FIX: Swipe-back / Android back button მხარდაჭერა.
+        // ბრაუზერის history API-ს ვუკავშირებთ ჩვენს შიდა view-ნავიგაციას,
+        // რომ მარცხნიდან-მარჯვნივ swipe (iOS) ან back ღილაკი (Android)
+        // აპს კი არ კეტავდეს, არამედ ჩვენი goBack() ლოგიკით მუშაობდეს.
+        isPoppingState: false,
+
+        initBackNavigation() {
+            // საწყისი state-ი ისტორიაში, რომ პირველივე back-ს ჰქონდეს რისი დაჭერა
+            history.replaceState({ view: this.view }, '');
+
+            window.addEventListener('popstate', (e) => {
+                this.isPoppingState = true;
+                this.goBack();
+                // ეგრევე ვაბრუნებთ flag-ს false-ზე, რომ შემდეგმა view-ცვლილებამ
+                // ჩვეულებრივად დაამატოს ახალი history entry
+                this.$nextTick(() => { this.isPoppingState = false; });
+            });
+
+            // ნებისმიერი view ან მოდალის ცვლილებისას ვამატებთ history entry-ს,
+            // გარდა იმ შემთხვევისა, როცა თვითონ popstate-მა გამოიწვია ცვლილება
+            this.$watch('view', () => {
+                if (!this.isPoppingState) {
+                    history.pushState({ view: this.view }, '');
+                }
+            });
+
+            const modalKeys = [
+                'modal', 'timeModal', 'scoreModal', 'editModal', 'refereeSetupModal',
+                'lineupModal', 'livePlayerEditModal', 'setupPlayerEditModal', 'cameraModal'
+            ];
+            modalKeys.forEach(key => {
+                this.$watch(`${key}.open`, (isOpen) => {
+                    if (!this.isPoppingState && isOpen) {
+                        history.pushState({ modal: key }, '');
+                    }
+                });
+            });
+        },
 
         goBack() {
             if (this.cameraModal.open) { this.closeCamera(); return; }
