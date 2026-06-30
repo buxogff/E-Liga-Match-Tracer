@@ -504,26 +504,30 @@ function matchApp() {
             else this.setup.awayPlayers = this.setup.awayPlayers.filter(x => x.id !== id);
         },
 
-        // FIX #3: Setup მოთამაშის რედაქტირება - სრულად გამართული
+        // FIX #3 (v2): Setup მოთამაშის რედაქტირება - გამყარებული ვერსია
         openSetupPlayerEdit(team, p) {
-            this.setupPlayerEditModal.team = team;
-            this.setupPlayerEditModal.id = p.id;
-            this.setupPlayerEditModal.num = p.num;
-            this.setupPlayerEditModal.name = p.name;
-            this.setupPlayerEditModal.open = true;
+            // ჯერ ვხურავთ სხვა შესაძლო ღია მოდალებს კონფლიქტის თავიდან ასაცილებლად
+            this.setupPlayerEditModal.open = false;
+            this.$nextTick(() => {
+                this.setupPlayerEditModal.team = team;
+                this.setupPlayerEditModal.id = p.id;
+                this.setupPlayerEditModal.num = p.num;
+                this.setupPlayerEditModal.name = p.name;
+                this.setupPlayerEditModal.open = true;
+            });
         },
         saveSetupPlayerEdit() {
             let list = this.setupPlayerEditModal.team === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
             let p = list.find(x => x.id === this.setupPlayerEditModal.id);
             if (p) {
-                p.num = this.setupPlayerEditModal.num.toString();
+                p.num = this.setupPlayerEditModal.num.toString().trim();
                 p.name = this.setupPlayerEditModal.name.toString().trim();
             }
-            // Alpine reactivity trigger
+            // Alpine reactivity trigger - სრულიად ახალი array reference
             if (this.setupPlayerEditModal.team === 'home') {
-                this.setup.homePlayers = [...this.setup.homePlayers];
+                this.setup.homePlayers = this.setup.homePlayers.map(x => x.id === p.id ? { ...p } : x);
             } else {
-                this.setup.awayPlayers = [...this.setup.awayPlayers];
+                this.setup.awayPlayers = this.setup.awayPlayers.map(x => x.id === p.id ? { ...p } : x);
             }
             this.setupPlayerEditModal.open = false;
         },
@@ -705,13 +709,16 @@ function matchApp() {
             this.sortEvents(); this.editModal.open = false; this.saveState();
         },
 
-        // FIX #3: Live მოთამაშის რედაქტირება - ივენთების სინქრონიზაციით
+        // FIX #3: Live მოთამაშის რედაქტირება - ივენთების სინქრონიზაციით (გამყარებული)
         openLivePlayerEdit(team, p) {
-            this.livePlayerEditModal.team = team;
-            this.livePlayerEditModal.id = p.id;
-            this.livePlayerEditModal.num = p.num;
-            this.livePlayerEditModal.name = p.name;
-            this.livePlayerEditModal.open = true;
+            this.livePlayerEditModal.open = false;
+            this.$nextTick(() => {
+                this.livePlayerEditModal.team = team;
+                this.livePlayerEditModal.id = p.id;
+                this.livePlayerEditModal.num = p.num;
+                this.livePlayerEditModal.name = p.name;
+                this.livePlayerEditModal.open = true;
+            });
         },
         saveLivePlayerEdit() {
             let list = this.livePlayerEditModal.team === 'home' ? this.match.homePlayers : this.match.awayPlayers;
