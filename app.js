@@ -34,6 +34,7 @@ function matchApp() {
         listeningTarget: null, 
         
         isScanning: false,
+        scanProgress: '',
         scanMode: null, // 'file' or 'camera'
         cameraStream: null,
 
@@ -73,6 +74,9 @@ function matchApp() {
             db.collection("matches").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 this.history = [];
                 snapshot.forEach((doc) => { this.history.push({ id: doc.id, ...doc.data() }); });
+                console.log('[history listener] role:', this.role, '| docs received:', snapshot.size, '| history.length:', this.history.length);
+            }, (error) => {
+                console.error('[history listener] ERROR:', error.code, error.message);
             });
 
             db.collection("live_matches").onSnapshot((snapshot) => {
@@ -207,54 +211,195 @@ function matchApp() {
         },
 
         // ============================================================
-        // FIX #1: გაუმჯობესებული OCR - ფაილი + კამერა + სიზუსტე
+        // FIX #1 (v2): გაუმჯობესებული OCR - წინასწარი დამუშავება + სიზუსტე
         // ============================================================
 
-        // OCR core: image-ს იღებს (File ან Blob) და ამუშავებს
+        // სურათის წინასწარი დამუშავება Canvas-ით: აუმჯობესებს ცუდი ხარისხის
+        // ფოტოს ამოცნობას - გადააქცევს შავ-თეთრად, ზრდის კონტრასტს, ზრდის ზომას
+        async preprocessImage(imageSource) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        // საჭიროების შემთხვევაში ვზრდით ზომას (პატარა სურათები უარესად იცნობა)
+                        const MIN_WIDTH = 1600;
+                        let scale = img.width < MIN_WIDTH ? (MIN_WIDTH / img.width) : 1;
+                        // ძალიან დიდი სურათები (კამერიდან) ცოტა შევამციროთ წარმადობისთვის
+                        if (img.width * scale > 3000) scale = 3000 / img.width;
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(img.width * scale);
+                        canvas.height = Math.round(img.height * scale);
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        // პიქსელების დამუშავება: გრეისქეილი + კონტრასტის გაძლიერება
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
+
+                        // 1) გრეისქეილში გადაყვანა (luminance ფორმულით)
+                        const gray = new Uint8ClampedArray(canvas.width * canvas.height);
+                        for (let i = 0; i < data.length; i += 4) {
+                            const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                            gray[i / 4] = lum;
+                        }
+
+                        // 2) საშუალო სიკაშკაშის გამოთვლა ადაპტური threshold-ისთვის
+                        let sum = 0;
+                        for (let i = 0; i < gray.length; i++) sum += gray[i];
+                        const mean = sum / gray.length;
+
+                        // 3) კონტრასტის გაძლიერება + ადაპტური threshold (Otsu-ს მსგავსი მარტივი ვერსია)
+                        const contrastFactor = 1.6;
+                        for (let i = 0; i < data.length; i += 4) {
+                            let v = gray[i / 4];
+                            // კონტრასტის გაძლიერება საშუალოს გარშემო
+                            v = mean + (v - mean) * contrastFactor;
+                            v = Math.max(0, Math.min(255, v));
+                            data[i] = data[i + 1] = data[i + 2] = v;
+                        }
+
+                        ctx.putImageData(imageData, 0, 0);
+                        canvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error('სურათის დამუშავება ვერ მოხერხდა'));
+                        }, 'image/png', 1.0);
+
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                img.onerror = () => reject(new Error('სურათის ჩატვირთვა ვერ მოხერხდა'));
+
+                if (imageSource instanceof Blob) {
+                    img.src = URL.createObjectURL(imageSource);
+                } else {
+                    img.src = imageSource;
+                }
+            });
+        },
+
+        // OCR core: image-ს იღებს (File ან Blob), ამუშავებს და სცადავს რამდენიმე
+        // რეჟიმით საუკეთესო შედეგის მისაღებად
         async runOCR(imageSource) {
             this.isScanning = true;
+            this.scanProgress = 'სურათი მზადდება...';
+
+            // Timeout დაცვა - თუ 60 წამში არ დასრულდა, ვწყვეტთ და ვატყობინებთ
+            let timeoutId = setTimeout(() => {
+                this.isScanning = false;
+                alert("სკანირებამ მეტისმეტად დიდხანს გასტანა. გთხოვთ შეამოწმოთ ინტერნეტ კავშირი და სცადოთ ისევ.\n\n(პირველი სკანირება ნელია, რადგან საჭიროებს ენის მონაცემების ჩამოტვირთვას — სცადეთ მეორედ, უფრო სწრაფი იქნება)");
+            }, 60000);
+
+            let worker = null;
+
             try {
-                // Tesseract პარამეტრები: geo + eng ენები, გაუმჯობესებული კონფიგი
-                const worker = await Tesseract.createWorker(['geo', 'eng'], 1, {
-                    logger: () => {}
+                // 1. წინასწარი დამუშავება - აუმჯობესებს ცუდი ხარისხის ფოტოს ამოცნობას
+                this.scanProgress = 'სურათი მუშავდება...';
+                let processedImage;
+                try {
+                    processedImage = await this.preprocessImage(imageSource);
+                } catch (e) {
+                    console.warn('Preprocessing failed, using original image:', e);
+                    processedImage = imageSource;
+                }
+
+                // 2. Worker-ის შექმნა - ქართული ენა (Tesseract-ის კოდი: 'kat', არა 'geo')
+                this.scanProgress = 'ენის მონაცემები იტვირთება...';
+                worker = await Tesseract.createWorker('kat', 1, {
+                    logger: (m) => {
+                        if (m.status === 'recognizing text') {
+                            this.scanProgress = `მუშავდება... ${Math.round((m.progress || 0) * 100)}%`;
+                        } else if (m.status === 'loading language traineddata') {
+                            this.scanProgress = 'ენის მონაცემები იტვირთება...';
+                        } else if (m.status === 'initializing tesseract') {
+                            this.scanProgress = 'ინიციალიზაცია...';
+                        }
+                    }
                 });
 
-                await worker.setParameters({
-                    tessedit_pageseg_mode: '6',      // PSM_SINGLE_BLOCK - ერთი ბლოკი
-                    preserve_interword_spaces: '1',   // FIX: სიტყვებს შორის გამოტოვება
-                    tessedit_char_whitelist: '',       // ყველა სიმბოლო
-                });
+                // 3. რამდენიმე PSM (Page Segmentation Mode) რეჟიმის ცდა - საუკეთესოს ავარჩევთ
+                // PSM 6 = ერთგვაროვანი ბლოკი (სია), PSM 4 = სვეტი ცვლადი ზომის ტექსტით, PSM 11 = მიმოფანტული ტექსტი
+                const psmModes = ['6', '4', '11'];
+                let bestText = '';
+                let bestScore = -1;
 
-                const ret = await worker.recognize(imageSource);
+                for (let psm of psmModes) {
+                    await worker.setParameters({
+                        tessedit_pageseg_mode: psm,
+                        preserve_interword_spaces: '1'
+                    });
+
+                    const ret = await worker.recognize(processedImage);
+                    const text = ret.data.text || '';
+                    
+                    // შედეგის შეფასება: რამდენი ვალიდური "ნომერი + სახელი" სტრიქონი ამოვიცანით
+                    const candidateLines = this.extractPlayerCandidates(text);
+                    const score = candidateLines.length;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestText = text;
+                    }
+
+                    // თუ კარგი შედეგი მივიღეთ, აღარ ვცდით დანარჩენ რეჟიმებს (დროის დასაზოგად)
+                    if (score >= 5) break;
+                }
+
                 await worker.terminate();
+                worker = null;
+                clearTimeout(timeoutId);
 
-                const rawText = ret.data.text;
-                this.parseOCRText(rawText);
+                if (!bestText || bestText.trim().length === 0) {
+                    alert("ტექსტი ვერ ამოვიცანი სურათზე. სცადეთ უფრო ნათელი ფოტო ან გადადით ხელით შეყვანაზე.");
+                    return;
+                }
+
+                this.parseOCRText(bestText);
 
             } catch (error) {
+                clearTimeout(timeoutId);
+                if (worker) { try { await worker.terminate(); } catch (e) {} }
                 console.error('OCR Error:', error);
-                alert("სკანირებისას დაფიქსირდა შეცდომა. სცადეთ ისევ.");
+                alert("სკანირებისას დაფიქსირდა შეცდომა: " + (error.message || 'უცნობი შეცდომა') + "\n\nსცადეთ ისევ, ან გადადით ხელით შეყვანაზე.");
             } finally {
+                clearTimeout(timeoutId);
                 this.isScanning = false;
+                this.scanProgress = '';
             }
         },
 
-        // OCR ტექსტის დამუშავება - გამოყოფს ნომერს და სახელს
+        // ხედავს ტექსტში რამდენი ვალიდური "ნომერი + სახელი" სტრიქონია (შეფასებისთვის)
+        extractPlayerCandidates(text) {
+            const lines = text.split('\n');
+            let count = 0;
+            for (let line of lines) {
+                line = line.trim();
+                if (/^№?#?\s*(\d{1,2})[.\s)]+[^\d\n]{2,}/.test(line)) count++;
+            }
+            return new Array(count);
+        },
+
+        // OCR ტექსტის დამუშავება - გამოყოფს ნომერს და სახელ-გვარს
+        // (იმავე ფორმატით ინახავს, როგორც ხელით შეყვანისას: num ცალკე, name = "სახელი გვარი")
         parseOCRText(text) {
             const lines = text.split('\n');
             let parsedPlayers = [];
 
-            for (let line of lines) {
-                // მოვაშოროთ ზედმეტი სიმბოლოები
-                line = line.trim();
+            for (let rawLine of lines) {
+                let line = rawLine.trim();
                 if (!line || line.length < 2) continue;
 
-                // FIX: გაუმჯობესებული regex - ნომერი + სახელი (ქართული, ლათინური)
-                // ეძებს: ნომერი (1-99) + დარჩენილი ტექსტი (სახელი გვარი)
+                // ვასუფთავებთ ხშირ "ნაგავ" სიმბოლოებს, რაც სკანირებაში ჩნდება
+                line = line.replace(/[|‘’"'`]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+                // ნომერი + სახელი/გვარი ამოღების pattern-ები (პრიორიტეტის მიხედვით)
                 const patterns = [
-                    /^(\d{1,2})\s+([^\d\n]+)/,           // "10 გიორგი ქობულია"
-                    /^№?\s*(\d{1,2})[.\s)]+([^\d\n]+)/,  // "№10. გიორგი ქობულია"
-                    /^[#]?(\d{1,2})\s+([^\d\n]+)/,        // "#10 გიორგი"
+                    /^№\s*(\d{1,2})[.\s)]+([^\d\n]+)/,    // "№10 გიორგი ქობულია"
+                    /^#\s*(\d{1,2})[.\s)]+([^\d\n]+)/,     // "#10 გიორგი ქობულია"
+                    /^(\d{1,2})[.\s)]+([^\d\n]+)/,          // "10. გიორგი ქობულია" ან "10 გიორგი ქობულია"
                 ];
 
                 let matched = false;
@@ -262,13 +407,17 @@ function matchApp() {
                     const m = line.match(pattern);
                     if (m) {
                         let num = m[1].trim();
-                        // FIX: სახელი გვარი - ვასუფთავებთ და ვინარჩუნებთ გამოტოვებებს
+                        // სახელი + გვარი ერთად ვინახავთ (ისევე, როგორც ხელით შევსების ველში)
                         let name = m[2]
-                            .replace(/[^\wა-ჰ\s\-\.]/g, ' ')  // ვტოვებთ ასოებს, ქართულს, ჰიფენს, წერტილს
-                            .replace(/\s{2,}/g, ' ')             // ორმაგ სფეისებს ვაქცევთ ერთად
+                            .replace(/[^\wა-ჰA-Za-z\s\-\.]/g, ' ')  // ვტოვებთ ასოებს (ქართულს და ლათინურს), ჰიფენს, წერტილს
+                            .replace(/\s{2,}/g, ' ')
                             .trim();
 
-                        if (num && parseInt(num) >= 1 && parseInt(num) <= 99 && name.length >= 2) {
+                        // ვშლით სიტყვის ბოლოს/თავში დარჩენილ ცალკეულ სიმბოლოებს (ხშირი OCR ხმაური)
+                        name = name.replace(/^[.\-]+|[.\-]+$/g, '').trim();
+
+                        const numVal = parseInt(num);
+                        if (num && numVal >= 1 && numVal <= 99 && name.length >= 2) {
                             parsedPlayers.push({ num, name });
                             matched = true;
                             break;
@@ -276,21 +425,31 @@ function matchApp() {
                     }
                 }
 
-                // თუ ნომერი სახელთან ერთ სტრიქონზე არ იდგა, შევამოწმოთ მარტო ნომერი
+                // თუ ნომერი მარტო დგას ცალკე სტრიქონზე (სახელი შემდეგ სტრიქონზეა)
                 if (!matched) {
-                    const numOnly = line.match(/^(\d{1,2})$/);
+                    const numOnly = line.match(/^№?#?\s*(\d{1,2})\s*$/);
                     if (numOnly) {
-                        parsedPlayers.push({ num: numOnly[1], name: '' });
+                        parsedPlayers.push({ num: numOnly[1], name: '', _pendingName: true });
+                    } else if (parsedPlayers.length > 0 && parsedPlayers[parsedPlayers.length - 1]._pendingName) {
+                        // წინა ნომერს ჯერ სახელი არ აქვს - ეს სტრიქონი შეიძლება იყოს მისი სახელი
+                        let possibleName = line.replace(/[^\wა-ჰA-Za-z\s\-\.]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+                        if (possibleName.length >= 2 && !/^\d+$/.test(possibleName)) {
+                            parsedPlayers[parsedPlayers.length - 1].name = possibleName;
+                            delete parsedPlayers[parsedPlayers.length - 1]._pendingName;
+                        }
                     }
                 }
             }
 
+            // ვასუფთავებთ დროებით დროშებს და ვშლით დუბლიკატ ნომრებს იმავე სიაში
+            parsedPlayers = parsedPlayers.map(p => ({ num: p.num, name: p.name || '' }));
+
             if (parsedPlayers.length === 0) {
-                alert("მოთამაშეების ნომრები ვერ ამოვიცანი.\nსცადეთ: უფრო ნათელი სურათი, ან კამერა უფრო ახლოს მიიტანეთ.");
+                alert("მოთამაშეების ნომრები ვერ ამოვიცანი.\nსცადეთ: უფრო ნათელი სურათი, ან კამერა უფრო ახლოს მიიტანეთ სიასთან.");
                 return;
             }
 
-            // სიაში დამატება
+            // სიაში დამატება - იმავე ლოგიკით, რაც ხელით დამატებისას მუშაობს
             parsedPlayers.forEach((p) => {
                 let currentList = this.setup.activeTab === 'home' ? this.setup.homePlayers : this.setup.awayPlayers;
                 let hasGKWithStatus = currentList.some(pl => pl.status === this.setup.playerStatus && pl.isGK);
@@ -298,7 +457,7 @@ function matchApp() {
                 const newPlayer = {
                     id: Date.now() + Math.random(),
                     num: p.num.toString(),
-                    name: p.name,
+                    name: p.name.toString().trim(),
                     status: this.setup.playerStatus,
                     isGK: !hasGKWithStatus,
                     isCaptain: false
@@ -314,7 +473,11 @@ function matchApp() {
                 }
             });
 
-            alert(`✓ ${parsedPlayers.length} მოთამაშე წარმატებით დაემატა!`);
+            // Alpine reactivity trigger
+            if (this.setup.activeTab === 'home') this.setup.homePlayers = [...this.setup.homePlayers];
+            else this.setup.awayPlayers = [...this.setup.awayPlayers];
+
+            alert(`✓ ${parsedPlayers.length} მოთამაშე წარმატებით დაემატა!\nშეამოწმეთ და საჭიროებისამებრ ჩაასწორეთ ✏️ ღილაკით.`);
         },
 
         // ფაილიდან სკანირება
