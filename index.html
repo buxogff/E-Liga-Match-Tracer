@@ -66,17 +66,17 @@
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col">
 
         <!-- LANDING -->
-        <div x-show="view === 'landing'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
+        <div x-show="view === 'landing'" x-cloak class="flex flex-col items-center h-[100dvh] p-8 text-center relative bg-white overflow-y-auto">
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
             <div class="absolute bottom-0 right-0 w-80 h-80 bg-eliga-cyan opacity-10 shape-triangle-2 transform translate-x-10 translate-y-10"></div>
-            <div class="relative z-10 w-full mb-10">
+            <div class="relative z-10 w-full mb-10 shrink-0">
                 <div class="w-24 h-24 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-6 shadow-2xl transform rotate-3">
                     <img src="logo.png" alt="E-Liga Logo" class="w-16 h-16 object-contain transform -rotate-3">
                 </div>
                 <h1 class="text-4xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
                 <p class="text-eliga-cyan font-bold tracking-widest text-[10px] uppercase mt-2">Match Management</p>
             </div>
-            <div class="w-full space-y-4 relative z-10">
+            <div class="w-full space-y-4 relative z-10 shrink-0">
                 <button @click="loginAsGuest()" class="w-full bg-gray-50 border-2 border-gray-200 text-gray-600 py-4 rounded-2xl font-black text-lg shadow-sm transform active:scale-95 transition flex items-center justify-center space-x-3">
                     <i class="fa-solid fa-user-astronaut text-xl text-eliga-cyan"></i> <span>სტუმარი</span>
                 </button>
@@ -86,6 +86,36 @@
                 <button @click="view = 'login'; loginType = 'referee'" class="w-full bg-eliga-blue text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center space-x-3 transform active:scale-95 transition shadow-xl">
                     <i class="fa-solid fa-whistle text-xl text-yellow-400"></i> <span>მსაჯები</span>
                 </button>
+            </div>
+
+            <!-- LIVE MATCHES SECTION -->
+            <div class="w-full relative z-10 mt-8 shrink-0 pb-6">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    </span>
+                    <h3 class="text-eliga-blue font-black text-xs uppercase tracking-widest">მიმდინარე მატჩები</h3>
+                </div>
+
+                <div x-show="liveMatches.length > 0" class="space-y-3">
+                    <template x-for="live in liveMatches" :key="live.id">
+                        <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition">
+                            <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest animate-pulse">LIVE NOW</span>
+                            <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
+                            <div class="flex justify-between items-center text-center">
+                                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
+                                <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="formatTime(live.displayTimer !== undefined ? live.displayTimer : live.timer)"></div>
+                                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.awayName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreAway"></p></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="liveMatches.length === 0" class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl py-8 px-4 flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-futbol text-3xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-400 font-black text-xs uppercase tracking-widest">არ არის მიმდინარე თამაში</p>
+                </div>
             </div>
         </div>
 
@@ -113,17 +143,17 @@
         </div>
 
         <!-- HOME -->
-        <div x-show="view === 'home'" x-cloak class="flex flex-col items-center justify-center h-[100dvh] p-8 text-center relative bg-white overflow-hidden">
+        <div x-show="view === 'home'" x-cloak class="flex flex-col items-center h-[100dvh] p-8 text-center relative bg-white overflow-y-auto">
             <button @click="logout()" class="absolute top-6 right-6 text-red-400 hover:text-red-600 font-bold text-xs uppercase z-20 flex items-center"><i class="fa-solid fa-right-from-bracket mr-1"></i> გასვლა</button>
             <div class="absolute top-0 left-0 w-64 h-64 bg-magenta opacity-10 shape-triangle-1 transform -translate-x-10 -translate-y-10"></div>
-            <div class="relative z-10 space-y-4 w-full">
+            <div class="relative z-10 space-y-4 w-full shrink-0">
                 <div class="w-28 h-28 mx-auto bg-eliga-blue rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
                     <img src="logo.png" alt="E-Liga Logo" class="w-20 h-20 object-contain">
                 </div>
                 <h1 class="text-5xl font-black text-eliga-blue uppercase tracking-tighter leading-none">ეროვნული<br><span class="text-magenta">ლიგა</span></h1>
                 <p class="text-eliga-cyan font-bold tracking-widest text-xs uppercase mt-2" x-text="role === 'superadmin' ? 'SUPER ADMIN PANEL' : 'მენეჯერის პანელი'"></p>
             </div>
-            <div class="w-full space-y-4 relative z-10 mt-12">
+            <div class="w-full space-y-4 relative z-10 mt-12 shrink-0">
                 <button x-show="hasActiveMatch" @click="resumeMatch()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-lg shadow-lg transform active:scale-95 transition flex justify-center items-center">
                     <i class="fa-solid fa-play mr-2"></i> გააგრძელე მატჩი
                 </button>
@@ -131,6 +161,37 @@
                 <button @click="view = 'history'" class="w-full border-2 border-eliga-blue text-eliga-blue py-5 rounded-2xl font-bold text-xl flex items-center justify-center space-x-2 transform active:scale-95 transition hover:bg-blue-50">
                     <i class="fa-solid fa-clock-rotate-left mr-2"></i> HISTORY
                 </button>
+            </div>
+
+            <!-- LIVE MATCHES SECTION -->
+            <div class="w-full relative z-10 mt-8 shrink-0 pb-6">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                    </span>
+                    <h3 class="text-eliga-blue font-black text-xs uppercase tracking-widest">მიმდინარე მატჩები</h3>
+                </div>
+
+                <div x-show="liveMatches.length > 0" class="space-y-3">
+                    <template x-for="live in liveMatches" :key="live.id">
+                        <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition">
+                            <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest animate-pulse">LIVE NOW</span>
+                            <button x-show="role === 'manager' || role === 'superadmin'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
+                            <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
+                            <div class="flex justify-between items-center text-center">
+                                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
+                                <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="formatTime(live.displayTimer !== undefined ? live.displayTimer : live.timer)"></div>
+                                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.awayName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreAway"></p></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="liveMatches.length === 0" class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl py-8 px-4 flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-futbol text-3xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-400 font-black text-xs uppercase tracking-widest">არ არის მიმდინარე თამაში</p>
+                </div>
             </div>
         </div>
 
@@ -614,19 +675,6 @@
                 <h2 class="text-xl font-black text-eliga-blue uppercase tracking-wider mx-auto pr-8">History</h2>
             </div>
             <div class="flex-1 overflow-y-auto space-y-4">
-                <template x-for="live in liveMatches" :key="live.id">
-                    <div @click="watchLiveMatch(live.id)" class="bg-gradient-to-br from-[#2e3192] to-[#e6007e] text-white p-5 rounded-2xl border border-white/10 shadow-lg relative cursor-pointer transform active:scale-95 transition animate-pulse mb-2">
-                        <span class="absolute top-4 right-4 bg-red-500 text-white font-black text-[8px] px-2 py-0.5 rounded uppercase tracking-widest">LIVE NOW</span>
-                        <button x-show="role === 'manager' || role === 'superadmin'" @click.stop="deleteLiveMatch(live.id)" class="absolute top-10 right-4 w-6 h-6 bg-white/20 text-white rounded-md flex items-center justify-center hover:bg-red-500 transition z-10"><i class="fa-solid fa-xmark text-xs"></i></button>
-                        <div class="border-b border-white/20 pb-2 mb-3"><p class="text-[10px] font-black tracking-widest uppercase text-[#00bce4]">მიმდინარე თამაში</p></div>
-                        <div class="flex justify-between items-center text-center">
-                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.homeName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreHome"></p></div>
-                            <div class="bg-black/20 border border-white/10 px-3 py-1.5 font-mono font-black text-sm rounded-xl mx-2" x-text="formatTime(live.displayTimer !== undefined ? live.displayTimer : live.timer)"></div>
-                            <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase truncate" x-text="live.awayName"></p><p class="text-3xl font-black mt-1" x-text="live.scoreAway"></p></div>
-                        </div>
-                    </div>
-                </template>
-
                 <template x-for="(h, index) in history">
                     <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col space-y-4 relative group hover:border-magenta transition">
                         <button x-show="role === 'manager' || role === 'superadmin'" @click="deleteReport(index)" class="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
