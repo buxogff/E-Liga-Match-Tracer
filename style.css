@@ -1,0 +1,67 @@
+[x-cloak] { display: none !important; }
+
+/* ეროვნული ლიგის ფერები */
+.bg-magenta { background-color: #e6007e; }
+.text-magenta { color: #e6007e; }
+.border-magenta { border-color: #e6007e; }
+
+.bg-eliga-blue { background-color: #2e3192; }
+.text-eliga-blue { color: #2e3192; }
+
+.bg-eliga-cyan { background-color: #00bce4; }
+.text-eliga-cyan { color: #00bce4; }
+
+/* გეომეტრიული ფიგურები */
+.shape-triangle-1 { clip-path: polygon(0 0, 100% 0, 0 100%); }
+.shape-triangle-2 { clip-path: polygon(100% 100%, 0% 100%, 100% 0); }
+.shape-polygon { clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); }
+
+/* PDF საბაზო სტილი */
+.pdf-container { background: white; padding: 20px; color: black; }
+
+/* PDF გვერდის გაყოფის კონტროლი
+   -----------------------------------------------
+   html2pdf.js იყენებს ამ CSS property-ებს, 
+   რომ ელემენტები გვერდის საზღვარზე სწორად გაჭრას.
+   -----------------------------------------------*/
+
+/* ეს ელემენტები შუაზე არ გაიჭრება */
+.pdf-no-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-column-break-inside: avoid !important;
+}
+
+/* ეს ელემენტები ახალ გვერდზე იწყება */
+.pdf-page-break-before {
+    break-before: page !important;
+    page-break-before: always !important;
+}
+
+/* Match Events-ის თითოეული ივენთი — შუაში არ გაიჭრება */
+.pdf-event-row {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+}
+
+/* Lineups-ის მოთამაშის სტრიქონი */
+.pdf-player-row {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+}
+
+/* ცხრილის სტრიქონები */
+tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+}
+
+/* PDF render-ისას ფერები სწორად ჩანდეს */
+@media print {
+    .text-magenta { color: #e6007e !important; }
+    .text-eliga-blue { color: #2e3192 !important; }
+    .text-eliga-cyan { color: #00bce4 !important; }
+    .bg-magenta { background-color: #e6007e !important; }
+    .bg-eliga-blue { background-color: #2e3192 !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
